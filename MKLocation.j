@@ -1,12 +1,14 @@
+
 @import <Foundation/CPObject.j>
 @import "MKMapView.j"
+
 
 MKLocationStringRegEx = /\s*<(\-?\d*\.?\d*),\s*(\-?\d*\.?\d*)>\s*$/;
 
 @implementation MKLocation : CPObject
 {
-    float         _latitude   @accessors(property=latitude);
-    float         _longitude  @accessors(property=longitude);
+    float         _latitude   @accessors(property=latitude, readonly);
+    float         _longitude  @accessors(property=longitude, readonly);
 }
 
 + (MKLocation)location
@@ -14,46 +16,70 @@ MKLocationStringRegEx = /\s*<(\-?\d*\.?\d*),\s*(\-?\d*\.?\d*)>\s*$/;
     return [[MKLocation alloc] init];
 }
 
-+ (MKLocation)locationWithLatitude:(float)aLat andLongitude:(float)aLng {
-    return [[MKLocation alloc] initWithLatitude:aLat andLongitude:aLng];
++ (MKLocation)locationWithLatitude:(float)aLatitude longitude:(float)aLongitude
+{
+    return [[MKLocation alloc] initWithLatitude:aLatitude longitude:aLongitude];
 }
 
 //create a location from a String like this:
 //san jose <37.3393857, -121.8949555>
 + (MKLocation)locationFromString:(CPString)aString
 {
-    var res = MKLocationStringRegEx.exec(aString);
-    
-    if (res && res.length === 3)
-    {
-        return [MKLocation locationWithLatitude:res[1] andLongitude:res[2]];
-    }
-    
+    var result = MKLocationStringRegEx.exec(aString);
+
+    if (result && result.length === 3)
+        return [MKLocation locationWithLatitude:result[1] longitude:result[2]];
+
     return nil;
 }
 
-- (id)initWithLatLng:(LatLng)aLatLng {
-    return [self initWithLatitude:aLatLng.lat() andLongitude:aLatLng.lng()];
+- (id)initWithLatLng:(LatLng)aLatLng
+{
+    return [self initWithLatitude:aLatLng.lat() longitude:aLatLng.lng()];
 }
 
-- (id)initWithLatitude:(float)aLat andLongitude:(float)aLng
+- (id)initWithLatitude:(float)aLatitude longitude:(float)aLongitude
 {
-    if (self = [super init]) {
-        _latitude = aLat;
-        _longitude = aLng;
+    self = [super init];
+
+    if (self)
+    {
+        _latitude = aLatitude;
+        _longitude = aLongitude;
     }
+
     return self;
 }
 
-- (LatLng)googleLatLng {
-    var gm = [MKMapView gmNamespace];
-    return new gm.LatLng(_latitude, _longitude);
-}
-
-- (void)encodeWithCoder:(CPCoder)coder
+- (LatLng)googleLatLng
 {
-    [coder encodeObject:[_latitude, _longitude] forKey:@"location"];
+    return new google.maps.LatLng(_latitude, _longitude);
 }
 
 @end
 
+var MKLocationLatitudeKey   = @"MKLocationLatitudeKey",
+    MKLocationLongitudeKey  = @"MKLocationLongitudeKey";
+
+@implementation MKLocation (CPCoding)
+
+- (id)initWithCoder:(CPCoder)aCoder
+{
+    self = [super init];
+
+    if (self)
+    {
+        _latitude = [aCoder decodeFloatForKey:MKLocationLatitudeKey];
+        _longitude = [aCoder decodeFloatForKey:MKLocationLongitudeKey];
+    }
+
+    return self;
+}
+
+- (void)encodeWithCoder:(CPCoder)aCoder
+{
+    [aCoder encodeFloat:_latitude forKey:MKLocationLatitudeKey];
+    [aCoder encodeFloat:_longitude forKey:MKLocationLongitudeKey];
+}
+
+@end

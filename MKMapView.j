@@ -1,240 +1,229 @@
+
 @import <AppKit/CPView.j>
-@import "MKMapScene.j"
-@import "MKMarker.j"
+
 @import "MKLocation.j"
-@import "MKPolyline.j"
 
-/* a "class" variable that will hold the domWin.google.maps object/"namespace" */
-var gmNamespace = nil;
 
-@implementation CPWebView(ScrollFixes) 
+var APIKey = @"ABQIAAAAhiSDpTbEtof5V-C_X90kxBQ9X6011y0sJ1RXT7gLKgEm76I9ChRoDebbydIfHUI3jZncPkN9YzRGHQ";
+
+@implementation MKMapView : CPView
 {
-    - (void)loadHTMLStringWithoutMessingUpScrollbars:(CPString)aString
-    {
-        [self _startedLoading];
-    
-        _ignoreLoadStart = YES;
-        _ignoreLoadEnd = NO;
-    
-        _url = null;
-        _html = aString;
-    
-        [self _load];
-    }
-}
-@end
+    DOMElement  m_DOMMapElement;
+    Object      m_map;
 
-@implementation MKMapView : CPWebView
-{
-    CPString        _apiKey;
-    DOMElement      _DOMMapElement;
-    JSObject        _gMap               @accessors(property=gMap);
-    MKMapScene      _scene              @accessors(property=scene);
-    BOOL            _mapReady;
-    BOOL            _googleAjaxLoaded;
-    id              delegate            @accessors;
-    BOOL            hasLoaded;
-    MKLocation      _center;
-    CPString        _centerName;
-    int             _zoomLevel;
+    MKLocation  m_location;
+    int         m_zoomLevel;
 }
 
-- (id)initWithFrame:(CGRect)aFrame apiKey:(CPString)apiKey
++ (void)setAPIKey:(CPString)anAPIKey
 {
-    return [self initWithFrame:aFrame apiKey:apiKey center:nil];
+    APIKey  = anAPIKey;
 }
 
-- (id)initWithFrame:(CGRect)aFrame apiKey:(CPString)apiKey center:(MKLocation)aLocation
+- (id)initWithFrame:(CGRect)aFrame
 {
-    _apiKey = apiKey;
-    _center = aLocation;
-    _zoomLevel = 6;
-    
-    if (!_center)
-    {
-        _center = [MKLocation locationWithLatitude:52 andLongitude:-1];
-    }
-    
-    if (self = [super initWithFrame:aFrame]) 
-    {
-        _scene = [[MKMapScene alloc] initWithMapView:self];
+    return [self initWithFrame:aFrame location:nil];
+}
 
-        var bounds = [self bounds];
-        
-        [self setFrameLoadDelegate:self];
-        [self loadHTMLStringWithoutMessingUpScrollbars:@"<html><head><script type=\"text/javascript\" src=\"http://www.google.com/jsapi?key=" + _apiKey + "\"></script></head><body style='padding:0px; margin:0px'><div id='MKMapViewDiv' style='left: 0px; top: 0px; width: 100%; height: 100%'></div></body></html>"];
+- (id)initWithFrame:(CGRect)aFrame location:(MKLocation)aLocation
+{
+    self = [super initWithFrame:aFrame];
+
+    if (self)
+    {
+        [self setLocation:aLocation || [MKLocation locationWithLatitude:52 longitude:-1]];
+        [self setZoomLevel:6];
+
+        [self _buildDOM];
     }
 
     return self;
 }
 
-- (void)webView:(CPWebView)aWebView didFinishLoadForFrame:(id)aFrame 
+- (void)_buildDOM
 {
-    // this is called twice for some reason
-    if(!hasLoaded) 
+    performWhenGoogleMapsScriptLoaded(function()
     {
-        [self loadGoogleMapsWhenReady];
-    }
-    hasLoaded = YES;
-}
+        m_DOMMapElement = document.createElement("div");
+        m_DOMMapElement.id = "MKMapView" + [self UID];
 
-- (void)loadGoogleMapsWhenReady() 
-{
-    var domWin = [self DOMWindow];
-    
-    if (typeof(domWin.google) === 'undefined') 
-    {
-        domWin.window.setTimeout(function() {[self loadGoogleMapsWhenReady];}, 100);
-    } 
-    else 
-    {
-        var googleScriptElement = domWin.document.createElement('script');
-        domWin.mapsJsLoaded = function () 
+        var style = m_DOMMapElement.style,
+            bounds = [self bounds],
+            width = CGRectGetWidth(bounds),
+            height = CGRectGetHeight(bounds);
+
+        style.overflow = "hidden";
+        style.position = "absolute";
+        style.visibility = "visible";
+        style.zIndex = 0;
+        style.left = "0px";
+        style.top = "0px";
+        style.width = width + "px";
+        style.height = height + "px";
+
+        _DOMElement.appendChild(m_DOMMapElement);
+
+        // The Map2 constructor seems pretty much incapable of figuring out the size of the
+        // container if it's not already in the DOM tree, so we set it explicitly here.
+        m_map = new google.maps.Map2(m_DOMMapElement, { size: new GSize(width, height) });
+
+        m_map.setCenter([m_location googleLatLng], 8);
+        m_map.setMapType(google.maps.G_PHYSICAL_MAP);
+        m_map.setUIToDefault();
+        m_map.enableContinuousZoom();
+        m_map.setZoom(m_zoomLevel);
+
+        google.maps.Event.addListener(m_map, "zoomend", function(oldZoomLevel, newZoomLevel)
         {
-            //alert('mapsJsLoaded!');
-            _googleAjaxLoaded = YES;
-            _DOMMapElement = domWin.document.getElementById('MKMapViewDiv');
-            [self createMap];
-        };
-        googleScriptElement.innerHTML = "google.load('maps', '2', {'callback': mapsJsLoaded});"
-        domWin.document.getElementsByTagName('head')[0].appendChild(googleScriptElement);
-    }
+            [self setZoomLevel:newZoomLevel];
+
+//            [[CPRunLoop currentRunLoop] limitDataForMode:CPDefaultRunLoopMode];
+        })
+    });
 }
 
-- (void)createMap
-{
-    var domWin = [self DOMWindow];
-    //remember the google maps namespace, but only once because it's a class variable
-    if (!gmNamespace) 
-    {
-        gmNamespace = domWin.google.maps;
-    }
-    
-    // for some things the current google namespace needs to be used...
-    var localGmNamespace = domWin.google.maps;
-
-    //console.log("Creating map");
-    _gMap = new localGmNamespace.Map2(_DOMMapElement);
-    //_gMap.addMapType(G_SATELLITE_3D_MAP);
-    _gMap.setMapType(localGmNamespace.G_PHYSICAL_MAP);
-    _gMap.setUIToDefault();
-    _gMap.enableContinuousZoom();
-    _gMap.setCenter([_center googleLatLng], 8);
-    _gMap.setZoom(_zoomLevel);
-    
-    // Hack to get mouse up event to work
-    localGmNamespace.Event.addDomListener(document.body, 'mouseup', function() { try { localGmNamespace.Event.trigger(domWin, 'mouseup'); } catch(e){} });
-
-    _mapReady = YES;
-    
-    if (delegate && [delegate respondsToSelector:@selector(mapViewIsReady:)]) 
-    {
-        [delegate mapViewIsReady:self];
-    }
-}
 - (void)setFrameSize:(CGSize)aSize
 {
     [super setFrameSize:aSize];
+
     var bounds = [self bounds];
-    if (_gMap) 
+
+    if (m_DOMMapElement)
     {
-        _gMap.checkResize();
+        var style = m_DOMMapElement.style;
+
+        style.width = CGRectGetWidth(bounds) + "px";
+        style.height = CGRectGetHeight(bounds) + "px";
+
+        m_map.checkResize();
     }
 }
 
-/* Overriding CPWebView's implementation */
-- (BOOL)_resizeWebFrame 
+- (void)setLocation:(MKLocation)aLocation
 {
-    var width = [self bounds].size.width,
-        height = [self bounds].size.height;
+    m_location = aLocation;
 
-    _iframe.setAttribute("width", width);
-    _iframe.setAttribute("height", height);
-
-    [_frameView setFrameSize:CGSizeMake(width, height)];
+    if (m_map)
+        m_map.setCenter([m_location googleLatLng], 8);
 }
 
-- (void)viewDidMoveToSuperview
+- (MKLocation)location
 {
-    if (!_mapReady && _googleAjaxLoaded) 
-    {
-        [self createMap];
-    }
-    [super viewDidMoveToSuperview];
+    return m_location;
 }
 
-- (void)setCenter:(MKLocation)aLocation 
+- (void)setZoomLevel:(float)aZoomLevel
 {
-    _center = aLocation;
-    if (_mapReady) 
-    {
-        _gMap.setCenter([aLocation googleLatLng]);
-    }
+    m_zoomLevel = +aZoomLevel || 0;
+
+    if (m_map)
+        m_map.setZoom(m_zoomLevel);
 }
 
-- (MKLocation)center 
+- (int)zoomLevel
 {
-    return _center;
+    return m_zoomLevel;
 }
 
-- (void)setZoom:(int)aZoomLevel 
+- (void)mouseDown:(CPEvent)anEvent
 {
-    _zoomLevel = aZoomLevel;
-    if (_mapReady) 
-    {
-        _gMap.setZoom(_zoomLevel);
-    }
+    [[[self window] platformWindow] _propagateCurrentDOMEvent:YES];
 }
 
-- (MKMarker)addMarker:(MKMarker)aMarker atLocation:(MKLocation)aLocation
+- (void)mouseDragged:(CPEvent)anEvent
 {
-    if (_mapReady) 
-    {
-        var gMarker = [aMarker gMarker];
-        gMarker.setLatLng([aLocation googleLatLng]);
-        _gMap.addOverlay(gMarker);
-    } 
-    else 
-    {
-        // TODO some sort of queue?
-    }
-    return marker;
+    [[[self window] platformWindow] _propagateCurrentDOMEvent:YES];
 }
 
-- (void)clearOverlays 
+- (void)mouseUp:(CPEvent)anEvent
 {
-    if (_mapReady) 
-    {
-        _gMap.clearOverlays();
-    }
-}
-
-- (void)addMapItem:(MKMapItem)mapItem
-{
-    [mapItem addToMapView:self];
-}
-
-- (BOOL)isMapReady 
-{
-    return _mapReady;
-}
-
-- (JSObject)gmNamespace 
-{
-    var domWin = [self DOMWindow];
-    
-    if (domWin && _mapReady) 
-    {
-        return domWin.google.maps;
-    }
-    
-    return nil;
-}
-
-+ (JSObject)gmNamespace 
-{
-    return gmNamespace;
+    [[[self window] platformWindow] _propagateCurrentDOMEvent:YES];
 }
 
 @end
 
+var GoogleMapsScriptQueue   = [];
+
+var performWhenGoogleMapsScriptLoaded = function(/*Function*/ aFunction)
+{
+    GoogleMapsScriptQueue.push(aFunction);
+
+    performWhenGoogleMapsScriptLoaded = function()
+    {
+        GoogleMapsScriptQueue.push(aFunction);
+    }
+
+    // Maps is already loaded
+    if (window.google && google.maps)
+        _MKMapViewMapsLoaded();
+
+    // Maps isn't loaded, but the Google Ajax Loader is
+    else if (window.google && google.load)
+        _MKMapViewGoogleAjaxLoaderLoaded();
+
+    else
+    {
+        var DOMScriptElement = document.createElement("script");
+
+        DOMScriptElement.src = "http://www.google.com/jsapi?key=" + APIKey + "&callback=_MKMapViewGoogleAjaxLoaderLoaded";
+        DOMScriptElement.type = "text/javascript";
+
+        document.getElementsByTagName("head")[0].appendChild(DOMScriptElement);
+    }
+}
+
+function _MKMapViewGoogleAjaxLoaderLoaded()
+{
+    google.load("maps", "2", { "callback": _MKMapViewMapsLoaded });
+
+    window.setTimeout(function()
+    {
+        [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
+    }, 500);
+}
+
+function _MKMapViewMapsLoaded()
+{
+    performWhenGoogleMapsScriptLoaded = function(/*Function*/ aFunction)
+    {
+        aFunction();
+    }
+
+    var index = 0,
+        count = GoogleMapsScriptQueue.length;
+
+    for (; index < count; ++index)
+        GoogleMapsScriptQueue[index]();
+
+    [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
+}
+
+var MKMapViewLocationKey    = @"MKMapViewLocationKey",
+    MKMapViewZoomLevelKey   = @"MKMapViewZoomLevelKey";
+
+@implementation MKMapView (CPCoding)
+
+- (id)initWithCoder:(CPCoder)aCoder
+{
+    self = [super initWithCoder:aCoder];
+
+    if (self)
+    {
+        [self setLocation:[aCoder decodeObjectForKey:MKMapViewLocationKey]];
+        [self setZoomLevel:[aCoder decodeObjectForKey:MKMapViewZoomLevelKey]];
+
+        [self _buildDOM];
+    }
+
+    return self;
+}
+
+- (void)encodeWithCoder:(CPCoder)aCoder
+{
+    [super encodeWithCoder:aCoder];
+
+    [aCoder encodeObject:[self location] forKey:MKMapViewLocationKey];
+    [aCoder encodeObject:[self zoomLevel] forKey:MKMapViewZoomLevelKey];
+}
+
+@end

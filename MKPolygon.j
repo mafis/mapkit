@@ -45,7 +45,7 @@
 
 - (Polygon)googlePolygon {
     if (_locations) {
-        var gm = [MKMapView gmNamespace];
+        var gm = google.maps;
         var locEnum = [_locations objectEnumerator];
         var loc = nil
         var lineCoordinates = [];

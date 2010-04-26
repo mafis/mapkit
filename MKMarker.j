@@ -230,7 +230,7 @@
     // if we have a marker, we can add it right away...
     if (_gMarker)
     {
-       [MKMapView gmNamespace].Event.addListener(_gMarker, anEvent, aFunction);
+        google.maps.Event.addListener(_gMarker, anEvent, aFunction);
     }
 }
 
