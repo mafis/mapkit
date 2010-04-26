@@ -18,9 +18,9 @@
     {
         [_classDescriptions setObject:[CPDictionary dictionaryWithJSObject:{
             "ClassName"  : "MKMapView",
-            "SuperClass" : "CPWebView",
-            "Outlets"    : {
-                            "delegate" : "id"
+            "SuperClass" : "CPView",
+            "Actions"    : {
+                             "takeStringSearchFrom:" : "id"
                            }
         } recursively:YES] forKey:@"MKMapView"];
     }
