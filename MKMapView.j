@@ -13,6 +13,7 @@ var APIKey = @"ABQIAAAAhiSDpTbEtof5V-C_X90kxBQ9X6011y0sJ1RXT7gLKgEm76I9ChRoDebby
 
     MKLocation  m_location;
     int         m_zoomLevel;
+    BOOL        m_scrollWheelZoomEnabled;
 }
 
 + (void)setAPIKey:(CPString)anAPIKey
@@ -33,6 +34,7 @@ var APIKey = @"ABQIAAAAhiSDpTbEtof5V-C_X90kxBQ9X6011y0sJ1RXT7gLKgEm76I9ChRoDebby
     {
         [self setLocation:aLocation || [MKLocation locationWithLatitude:52 longitude:-1]];
         [self setZoomLevel:6];
+        [self setScrollWheelZoomEnabled:YES];
 
         [self _buildDOM];
     }
@@ -123,6 +125,19 @@ var APIKey = @"ABQIAAAAhiSDpTbEtof5V-C_X90kxBQ9X6011y0sJ1RXT7gLKgEm76I9ChRoDebby
 - (int)zoomLevel
 {
     return m_zoomLevel;
+}
+
+- (void)setScrollWheelZoomEnabled:(BOOL)shouldBeEnabled
+{
+    m_scrollWheelZoomEnabled = shouldBeEnabled;
+
+    if (m_map)
+        m_map.setScrollWheelZoomEnabled(m_scrollWheelZoomEnabled);
+}
+
+- (BOOL)scrollWheelZoomEnabled
+{
+    return m_scrollWheelZoomEnabled;
 }
 
 - (void)mouseDown:(CPEvent)anEvent
