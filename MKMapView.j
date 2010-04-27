@@ -90,7 +90,7 @@ var APIKey = @"ABQIAAAAhiSDpTbEtof5V-C_X90kxBQ9X6011y0sJ1RXT7gLKgEm76I9ChRoDebby
             [self setZoomLevel:newZoomLevel];
 
 //            [[CPRunLoop currentRunLoop] limitDataForMode:CPDefaultRunLoopMode];
-        })
+        });
     });
 }
 
@@ -179,7 +179,7 @@ var APIKey = @"ABQIAAAAhiSDpTbEtof5V-C_X90kxBQ9X6011y0sJ1RXT7gLKgEm76I9ChRoDebby
         if (!aPoint)
             return;
 
-        [self setLocation:[[MKLocation alloc] initWithLatLng:point]];
+        [self setLocation:[[MKLocation alloc] initWithLatLng:aPoint]];
         [self setZoomLevel:7];
     });
 }

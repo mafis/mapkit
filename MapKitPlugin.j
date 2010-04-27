@@ -20,7 +20,7 @@
             "ClassName"  : "MKMapView",
             "SuperClass" : "CPView",
             "Actions"    : {
-                             "takeStringSearchFrom:" : "id"
+                             "takeStringAddressFrom:" : "id"
                            }
         } recursively:YES] forKey:@"MKMapView"];
     }
