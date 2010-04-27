@@ -21,6 +21,16 @@ var APIKey = @"ABQIAAAAhiSDpTbEtof5V-C_X90kxBQ9X6011y0sJ1RXT7gLKgEm76I9ChRoDebby
     APIKey  = anAPIKey;
 }
 
++ (CPSet)keyPathsForValuesAffectingLocationLatitude
+{
+    return [CPSet setWithObjects:@"location"];
+}
+
++ (CPSet)keyPathsForValuesAffectingLocationLongitude
+{
+    return [CPSet setWithObjects:@"location"];
+}
+
 - (id)initWithFrame:(CGRect)aFrame
 {
     return [self initWithFrame:aFrame location:nil];
@@ -114,6 +124,26 @@ var APIKey = @"ABQIAAAAhiSDpTbEtof5V-C_X90kxBQ9X6011y0sJ1RXT7gLKgEm76I9ChRoDebby
     return m_location;
 }
 
+- (void)setLocationLatitude:(float)aLatitude
+{
+    [self setLocation:[MKLocation locationWithLatitude:aLatitude longitude:[self locationLongitude]]];
+}
+
+- (float)locationLatitude
+{
+    return [[self location] latitude];
+}
+
+- (void)setLocationLongitude:(float)aLongitude
+{
+    [self setLocation:[MKLocation locationWithLatitude:[self locationLatitude] longitude:aLongitude]];
+}
+
+- (float)locationLongitude
+{
+    return [[self location] longitude];
+}
+
 - (void)setZoomLevel:(float)aZoomLevel
 {
     m_zoomLevel = +aZoomLevel || 0;
@@ -138,6 +168,20 @@ var APIKey = @"ABQIAAAAhiSDpTbEtof5V-C_X90kxBQ9X6011y0sJ1RXT7gLKgEm76I9ChRoDebby
 - (BOOL)scrollWheelZoomEnabled
 {
     return m_scrollWheelZoomEnabled;
+}
+
+- (void)takeStringAddressFrom:(id)aSender
+{
+    var geocoder = new google.maps.ClientGeocoder();
+
+    geocoder.getLatLng([aSender stringValue], function(aPoint)
+    {
+        if (!aPoint)
+            return;
+
+        [self setLocation:[[MKLocation alloc] initWithLatLng:point]];
+        [self setZoomLevel:7];
+    });
 }
 
 - (void)mouseDown:(CPEvent)anEvent
