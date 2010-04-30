@@ -89,6 +89,9 @@ var APIKey = @"ABQIAAAAhiSDpTbEtof5V-C_X90kxBQ9X6011y0sJ1RXT7gLKgEm76I9ChRoDebby
         style.left = "0px";
         style.top = "0px";
 
+        // REMOVE this or you will get WRONG_DOCUMENT_ERRORS (4)!
+        document.body.removeChild(m_DOMMapElement);
+
         _DOMElement.appendChild(m_DOMMapElement);
 /*
         google.maps.Event.addListener(m_map, "zoomend", function(oldZoomLevel, newZoomLevel)
