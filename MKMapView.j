@@ -68,29 +68,36 @@ var APIKey = @"ABQIAAAAhiSDpTbEtof5V-C_X90kxBQ9X6011y0sJ1RXT7gLKgEm76I9ChRoDebby
         style.position = "absolute";
         style.visibility = "visible";
         style.zIndex = 0;
-        style.left = "0px";
-        style.top = "0px";
+        style.left = -width + "px";
+        style.top = -height + "px";
         style.width = width + "px";
         style.height = height + "px";
 
+        // Google Maps can't figure out the size of the div if it's not in the DOM tree, 
+        // so we have to temporarily place it somewhere on the screen to appropriately size it.
+        document.body.appendChild(m_DOMMapElement);
+
+        m_map = new google.maps.Map(m_DOMMapElement,
+        {
+            center:[m_location googleLatLng],
+            zoom:m_zoomLevel,
+            mapTypeId: google.maps.MapTypeId.ROADMAP,
+        });
+
+        google.maps.event.trigger(m_map, "resize");
+
+        style.left = "0px";
+        style.top = "0px";
+
         _DOMElement.appendChild(m_DOMMapElement);
-
-        // The Map2 constructor seems pretty much incapable of figuring out the size of the
-        // container if it's not already in the DOM tree, so we set it explicitly here.
-        m_map = new google.maps.Map2(m_DOMMapElement, { size: new GSize(width, height) });
-
-        m_map.setCenter([m_location googleLatLng], 8);
-        m_map.setMapType(google.maps.G_PHYSICAL_MAP);
-        m_map.setUIToDefault();
-        m_map.enableContinuousZoom();
-        m_map.setZoom(m_zoomLevel);
-
+/*
         google.maps.Event.addListener(m_map, "zoomend", function(oldZoomLevel, newZoomLevel)
         {
             [self setZoomLevel:newZoomLevel];
 
 //            [[CPRunLoop currentRunLoop] limitDataForMode:CPDefaultRunLoopMode];
         });
+*/
     });
 }
 
@@ -107,7 +114,7 @@ var APIKey = @"ABQIAAAAhiSDpTbEtof5V-C_X90kxBQ9X6011y0sJ1RXT7gLKgEm76I9ChRoDebby
         style.width = CGRectGetWidth(bounds) + "px";
         style.height = CGRectGetHeight(bounds) + "px";
 
-        m_map.checkResize();
+        google.maps.event.trigger(m_map, "resize");
     }
 }
 
@@ -172,14 +179,14 @@ var APIKey = @"ABQIAAAAhiSDpTbEtof5V-C_X90kxBQ9X6011y0sJ1RXT7gLKgEm76I9ChRoDebby
 
 - (void)takeStringAddressFrom:(id)aSender
 {
-    var geocoder = new google.maps.ClientGeocoder();
+    var geocoder = new google.maps.Geocoder();
 
-    geocoder.getLatLng([aSender stringValue], function(aPoint)
+    geocoder.geocode({ address:[aSender stringValue] }, function(results, aStatus)
     {
-        if (!aPoint)
+        if (aStatus !== google.maps.GeocoderStatus.OK)
             return;
 
-        [self setLocation:[[MKLocation alloc] initWithLatLng:aPoint]];
+        [self setLocation:[[MKLocation alloc] initWithLatLng:results[0].geometry.location]];
         [self setZoomLevel:7];
     });
 }
@@ -213,32 +220,18 @@ var performWhenGoogleMapsScriptLoaded = function(/*Function*/ aFunction)
     }
 
     // Maps is already loaded
-    if (window.google && google.maps)
+    if (window.google && google.maps && google.maps.Map)
         _MKMapViewMapsLoaded();
-
-    // Maps isn't loaded, but the Google Ajax Loader is
-    else if (window.google && google.load)
-        _MKMapViewGoogleAjaxLoaderLoaded();
 
     else
     {
         var DOMScriptElement = document.createElement("script");
 
-        DOMScriptElement.src = "http://www.google.com/jsapi?key=" + APIKey + "&callback=_MKMapViewGoogleAjaxLoaderLoaded";
+        DOMScriptElement.src = "http://maps.google.com/maps/api/js?sensor=false&callback=_MKMapViewMapsLoaded";
         DOMScriptElement.type = "text/javascript";
 
         document.getElementsByTagName("head")[0].appendChild(DOMScriptElement);
     }
-}
-
-function _MKMapViewGoogleAjaxLoaderLoaded()
-{
-    google.load("maps", "2", { "callback": _MKMapViewMapsLoaded });
-
-    window.setTimeout(function()
-    {
-        [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
-    }, 500);
 }
 
 function _MKMapViewMapsLoaded()
