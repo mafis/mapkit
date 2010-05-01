@@ -4,7 +4,10 @@
 @import "MKLocation.j"
 
 
-var APIKey = @"ABQIAAAAhiSDpTbEtof5V-C_X90kxBQ9X6011y0sJ1RXT7gLKgEm76I9ChRoDebbydIfHUI3jZncPkN9YzRGHQ";
+MKMapTypeStandard           = 0;
+MKMapTypeHybrid             = 1;
+MKMapTypeSatellite          = 2;
+MKMapTypeTerrain            = 3;
 
 @implementation MKMapView : CPView
 {
@@ -13,12 +16,9 @@ var APIKey = @"ABQIAAAAhiSDpTbEtof5V-C_X90kxBQ9X6011y0sJ1RXT7gLKgEm76I9ChRoDebby
 
     MKLocation  m_location;
     int         m_zoomLevel;
-    BOOL        m_scrollWheelZoomEnabled;
-}
+    MKMapType   m_mapType;
 
-+ (void)setAPIKey:(CPString)anAPIKey
-{
-    APIKey  = anAPIKey;
+    BOOL        m_scrollWheelZoomEnabled;
 }
 
 + (CPSet)keyPathsForValuesAffectingLocationLatitude
@@ -29,6 +29,16 @@ var APIKey = @"ABQIAAAAhiSDpTbEtof5V-C_X90kxBQ9X6011y0sJ1RXT7gLKgEm76I9ChRoDebby
 + (CPSet)keyPathsForValuesAffectingLocationLongitude
 {
     return [CPSet setWithObjects:@"location"];
+}
+
++ (int)_mapTypeIdForMapType:(MKMapType)aMapType
+{
+    return  [
+                google.maps.MapTypeId.ROADMAP,
+                google.maps.MapTypeId.HYBRID,
+                google.maps.MapTypeId.SATELLITE,
+                google.maps.MapTypeId.TERRAIN
+            ][aMapType];
 }
 
 - (id)initWithFrame:(CGRect)aFrame
@@ -44,6 +54,7 @@ var APIKey = @"ABQIAAAAhiSDpTbEtof5V-C_X90kxBQ9X6011y0sJ1RXT7gLKgEm76I9ChRoDebby
     {
         [self setLocation:aLocation || [MKLocation locationWithLatitude:52 longitude:-1]];
         [self setZoomLevel:6];
+        [self setMapType:MKMapTypeStandard];
         [self setScrollWheelZoomEnabled:YES];
 
         [self _buildDOM];
@@ -81,7 +92,7 @@ var APIKey = @"ABQIAAAAhiSDpTbEtof5V-C_X90kxBQ9X6011y0sJ1RXT7gLKgEm76I9ChRoDebby
         {
             center:[m_location googleLatLng],
             zoom:m_zoomLevel,
-            mapTypeId: google.maps.MapTypeId.ROADMAP,
+            mapTypeId:[[self class] _mapTypeIdForMapType:m_mapType],
         });
 
         google.maps.event.trigger(m_map, "resize");
@@ -165,6 +176,19 @@ var APIKey = @"ABQIAAAAhiSDpTbEtof5V-C_X90kxBQ9X6011y0sJ1RXT7gLKgEm76I9ChRoDebby
 - (int)zoomLevel
 {
     return m_zoomLevel;
+}
+
+- (void)setMapType:(MKMapType)aMapType
+{
+    m_mapType = aMapType;
+
+    if (m_map)
+        m_map.setMapTypeId([[self class] _mapTypeIdForMapType:m_mapType]);
+}
+
+- (MKMapType)mapType
+{
+    return m_mapType;
 }
 
 - (void)setScrollWheelZoomEnabled:(BOOL)shouldBeEnabled
@@ -254,7 +278,8 @@ function _MKMapViewMapsLoaded()
 }
 
 var MKMapViewLocationKey    = @"MKMapViewLocationKey",
-    MKMapViewZoomLevelKey   = @"MKMapViewZoomLevelKey";
+    MKMapViewZoomLevelKey   = @"MKMapViewZoomLevelKey",
+    MKMapViewMapTypeKey     = @"MKMapViewMapTypeKey";
 
 @implementation MKMapView (CPCoding)
 
@@ -266,6 +291,7 @@ var MKMapViewLocationKey    = @"MKMapViewLocationKey",
     {
         [self setLocation:[aCoder decodeObjectForKey:MKMapViewLocationKey]];
         [self setZoomLevel:[aCoder decodeObjectForKey:MKMapViewZoomLevelKey]];
+        [self setMapType:[aCoder decodeObjectForKey:MKMapViewMapTypeKey]];
 
         [self _buildDOM];
     }
@@ -279,6 +305,7 @@ var MKMapViewLocationKey    = @"MKMapViewLocationKey",
 
     [aCoder encodeObject:[self location] forKey:MKMapViewLocationKey];
     [aCoder encodeObject:[self zoomLevel] forKey:MKMapViewZoomLevelKey];
+    [aCoder encodeObject:[self mapType] forKey:MKMapViewMapTypeKey];
 }
 
 @end

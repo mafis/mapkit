@@ -4,8 +4,23 @@
 
 @implementation MKMapViewAttributeInspector : AKInspector
 {
-    @outlet CPTextField latitudeField;
-    @outlet CPTextField longitudeField;
+    @outlet CPTextField     latitudeField;
+    @outlet CPTextField     longitudeField;
+    @outlet CPPopUpButton   mapTypePopUpButton;
+}
+
+- (void)awakeFromCib
+{
+    [mapTypePopUpButton removeAllItems];
+
+    [mapTypePopUpButton addItemWithTitle:@"Map"];
+    [[mapTypePopUpButton lastItem] setTag:MKMapTypeStandard];
+    [mapTypePopUpButton addItemWithTitle:@"Satellite"];
+    [[mapTypePopUpButton lastItem] setTag:MKMapTypeSatellite];
+    [mapTypePopUpButton addItemWithTitle:@"Hybrid"];
+    [[mapTypePopUpButton lastItem] setTag:MKMapTypeHybrid];
+    [mapTypePopUpButton addItemWithTitle:@"Terrain"];
+    [[mapTypePopUpButton lastItem] setTag:MKMapTypeTerrain];
 }
 
 - (CPString)label
@@ -24,6 +39,12 @@
 
     [latitudeField takeValueFromKeyPath:@"locationLatitude" ofObjects:inspectedObjects];
     [longitudeField takeValueFromKeyPath:@"locationLongitude" ofObjects:inspectedObjects];
+    [mapTypePopUpButton takeValueFromKeyPath:@"mapType" ofObjects:inspectedObjects];
+}
+
+- (@action)takeStringAddressFrom:(CPSearchField)aSearchField
+{
+    [[self inspectedObjects] makeObjectsPerformSelector:@selector(takeStringAddressFrom:) withObject:aSearchField];
 }
 
 - (@action)takeLatitudeFrom:(CPTextField)aTextField
@@ -36,9 +57,9 @@
     [[self inspectedObjects] makeObjectsPerformSelector:@selector(setLocationLongitude:) withObject:[aTextField floatValue]];
 }
 
-- (@action)takeStringAddressFrom:(CPSearchField)aSearchField
+- (@action)takeMapTypeFrom:(id)aPopUpButton
 {
-    [[self inspectedObjects] makeObjectsPerformSelector:@selector(takeStringAddressFrom:) withObject:aSearchField];
+    [[self inspectedObjects] makeObjectsPerformSelector:@selector(setMapType:) withObject:[[aPopUpButton selectedItem] tag]];
 }
 
 @end

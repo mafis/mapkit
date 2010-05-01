@@ -10,7 +10,8 @@
     [[keyPaths objectForKey:AKAttributeKeyPaths] addObjectsFromArray:[
         @"location",
         @"zoomLevel",
-        @"scrollWheelZoomEnabled"]];
+        @"scrollWheelZoomEnabled",
+        @"mapType"]];
 }
 
 - (void)atlasPopulateAttributeInspectorClasses:(CPMutableArray)classes
