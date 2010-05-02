@@ -16,6 +16,7 @@
     // Google Maps v3 DOM Support
     DOMElement              m_DOMMapElement;
     Object                  m_map;
+    Object                  m_overlay;
 }
 
 + (CPSet)keyPathsForValuesAffectingCenterCoordinateLatitude
@@ -82,7 +83,7 @@
         style.width = width + "px";
         style.height = height + "px";
 
-        // Google Maps can't figure out the size of the div if it's not in the DOM tree, 
+        // Google Maps can't figure out the size of the div if it's not in the DOM tree,
         // so we have to temporarily place it somewhere on the screen to appropriately size it.
         document.body.appendChild(m_DOMMapElement);
 
@@ -98,10 +99,16 @@
         style.left = "0px";
         style.top = "0px";
 
-        // REMOVE this or you will get WRONG_DOCUMENT_ERRORS (4)!
+        // Important: we had to remove this dom element before appending it somewhere else
+        // or you will get WRONG_DOCUMENT_ERRs (4)
         document.body.removeChild(m_DOMMapElement);
 
         _DOMElement.appendChild(m_DOMMapElement);
+
+        m_overlay = new google.maps.OverlayView();
+
+        m_overlay.draw = function() { };
+        m_overlay.setMap(m_map);
 /*
         google.maps.Event.addListener(m_map, "zoomend", function(oldZoomLevel, newZoomLevel)
         {
@@ -254,7 +261,7 @@
     if (!m_map)
         return CGPointMakeZero();
 
-    var location = m_map.getProjection().fromLatLngToPoint(LatLngFromCLLocationCoordinate2D(aCoordinate));
+    var location = m_overlay.getProjection().fromLatLngToContainerPixel(LatLngFromCLLocationCoordinate2D(aCoordinate));
 
     return [self convertPoint:CGPointMake(location.x, location.y) toView:aView];
 }
@@ -265,7 +272,7 @@
         return new CLLocationCoordinate2D();
 
     var location = [self convertPoint:aPoint fromView:aView],
-        latlng = m_map.getProjection().fromPointToLatLng(new google.maps.Point(location.x, location.y));
+        latlng = m_overlay.getProjection().fromContainerPixelToLatLng(new google.maps.Point(location.x, location.y));
 
     return CLLocationCoordinate2DFromLatLng(latlng);
 }
