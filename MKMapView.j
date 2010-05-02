@@ -249,6 +249,27 @@
     [[[self window] platformWindow] _propagateCurrentDOMEvent:YES];
 }
 
+- (CGPoint)convertCoordinate:(CLLocationCoordinate2D)aCoordinate toPointToView:(CPView)aView
+{
+    if (!m_map)
+        return CGPointMakeZero();
+
+    var location = m_map.getProjection().fromLatLngToPoint(LatLngFromCLLocationCoordinate2D(aCoordinate));
+
+    return [self convertPoint:CGPointMake(location.x, location.y) toView:aView];
+}
+
+- (CLLocationCoordinate2D)convertPoint:(CGPoint)aPoint toCoordinateFromView:(CPView)aView
+{
+    if (!m_map)
+        return new CLLocationCoordinate2D();
+
+    var location = [self convertPoint:aPoint fromView:aView],
+        latlng = m_map.getProjection().fromPointToLatLng(new google.maps.Point(location.x, location.y));
+
+    return CLLocationCoordinate2DFromLatLng(latlng);
+}
+
 @end
 
 var GoogleMapsScriptQueue   = [];
