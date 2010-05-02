@@ -8,7 +8,7 @@
     [super atlasPopulateKeyPaths:keyPaths];
 
     [[keyPaths objectForKey:AKAttributeKeyPaths] addObjectsFromArray:[
-        @"location",
+        @"centerCoordinate",
         @"zoomLevel",
         @"scrollWheelZoomEnabled",
         @"mapType"]];

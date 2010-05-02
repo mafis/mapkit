@@ -37,8 +37,8 @@
 {
     var inspectedObjects = [self inspectedObjects];
 
-    [latitudeField takeValueFromKeyPath:@"locationLatitude" ofObjects:inspectedObjects];
-    [longitudeField takeValueFromKeyPath:@"locationLongitude" ofObjects:inspectedObjects];
+    [latitudeField takeValueFromKeyPath:@"centerCoordinateLatitude" ofObjects:inspectedObjects];
+    [longitudeField takeValueFromKeyPath:@"centerCoordinateLongitude" ofObjects:inspectedObjects];
     [mapTypePopUpButton takeValueFromKeyPath:@"mapType" ofObjects:inspectedObjects];
 }
 
@@ -49,12 +49,12 @@
 
 - (@action)takeLatitudeFrom:(CPTextField)aTextField
 {
-    [[self inspectedObjects] makeObjectsPerformSelector:@selector(setLocationLatitude:) withObject:[aTextField floatValue]];
+    [[self inspectedObjects] makeObjectsPerformSelector:@selector(setCenterCoordinateLatitude:) withObject:[aTextField floatValue]];
 }
 
 - (@action)takeLongitudeFrom:(CPTextField)aTextField
 {
-    [[self inspectedObjects] makeObjectsPerformSelector:@selector(setLocationLongitude:) withObject:[aTextField floatValue]];
+    [[self inspectedObjects] makeObjectsPerformSelector:@selector(setCenterCoordinateLongitude:) withObject:[aTextField floatValue]];
 }
 
 - (@action)takeMapTypeFrom:(id)aPopUpButton

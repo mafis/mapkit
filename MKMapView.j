@@ -1,34 +1,31 @@
 
 @import <AppKit/CPView.j>
 
-@import "MKLocation.j"
+@import "MKGeometry.j"
+@import "MKTypes.j"
 
-
-MKMapTypeStandard           = 0;
-MKMapTypeHybrid             = 1;
-MKMapTypeSatellite          = 2;
-MKMapTypeTerrain            = 3;
 
 @implementation MKMapView : CPView
 {
-    DOMElement  m_DOMMapElement;
-    Object      m_map;
+    CLLocationCoordinate2D  m_centerCoordinate;
+    int                     m_zoomLevel;
+    MKMapType               m_mapType;
 
-    MKLocation  m_location;
-    int         m_zoomLevel;
-    MKMapType   m_mapType;
+    BOOL                    m_scrollWheelZoomEnabled;
 
-    BOOL        m_scrollWheelZoomEnabled;
+    // Google Maps v3 DOM Support
+    DOMElement              m_DOMMapElement;
+    Object                  m_map;
 }
 
-+ (CPSet)keyPathsForValuesAffectingLocationLatitude
++ (CPSet)keyPathsForValuesAffectingCenterCoordinateLatitude
 {
-    return [CPSet setWithObjects:@"location"];
+    return [CPSet setWithObjects:@"centerCoordinate"];
 }
 
-+ (CPSet)keyPathsForValuesAffectingLocationLongitude
++ (CPSet)keyPathsForValuesAffectingCenterCoordinateLongitude
 {
-    return [CPSet setWithObjects:@"location"];
+    return [CPSet setWithObjects:@"centerCoordinate"];
 }
 
 + (int)_mapTypeIdForMapType:(MKMapType)aMapType
@@ -43,16 +40,17 @@ MKMapTypeTerrain            = 3;
 
 - (id)initWithFrame:(CGRect)aFrame
 {
-    return [self initWithFrame:aFrame location:nil];
+    return [self initWithFrame:aFrame centerCoordinate:nil];
 }
 
-- (id)initWithFrame:(CGRect)aFrame location:(MKLocation)aLocation
+- (id)initWithFrame:(CGRect)aFrame centerCoordinate:(CLLocationCoordinate2D)aCoordinate
 {
     self = [super initWithFrame:aFrame];
 
     if (self)
     {
-        [self setLocation:aLocation || [MKLocation locationWithLatitude:52 longitude:-1]];
+        [self setBackgroundColor:[CPColor colorWithRed:229.0 / 255.0 green:227.0 / 255.0 blue:223.0 / 255.0 alpha:1.0]];
+        [self setCenterCoordinate:aCoordinate || new CLLocationCoordinate2D(52, -1)];
         [self setZoomLevel:6];
         [self setMapType:MKMapTypeStandard];
         [self setScrollWheelZoomEnabled:YES];
@@ -90,7 +88,7 @@ MKMapTypeTerrain            = 3;
 
         m_map = new google.maps.Map(m_DOMMapElement,
         {
-            center:[m_location googleLatLng],
+            center:LatLngFromCLLocationCoordinate2D(m_centerCoordinate),
             zoom:m_zoomLevel,
             mapTypeId:[[self class] _mapTypeIdForMapType:m_mapType],
         });
@@ -132,37 +130,53 @@ MKMapTypeTerrain            = 3;
     }
 }
 
-- (void)setLocation:(MKLocation)aLocation
+- (MKCoordinateRegion)region
 {
-    m_location = aLocation;
+    if (m_map)
+        return MKCoordinateRegionFromLatLngBounds(m_map.getBounds());
+
+    return nil;
+}
+
+- (void)setRegion:(MKCoordinateRegion)aRegion
+{
+    m_region = aRegion;
 
     if (m_map)
-        m_map.setCenter([m_location googleLatLng], 8);
+        m_map.fitBounds(LatLngBoundsFromMKCoordinateRegion(aRegion));
 }
 
-- (MKLocation)location
+- (void)setCenterCoordinate:(CLLocationCoordinate2D)aCoordinate
 {
-    return m_location;
+    m_centerCoordinate = aCoordinate;
+
+    if (m_map)
+        m_map.setCenter(LatLngFromCLLocationCoordinate2D(aCoordinate));
 }
 
-- (void)setLocationLatitude:(float)aLatitude
+- (CLLocationCoordinate2D)centerCoordinate
 {
-    [self setLocation:[MKLocation locationWithLatitude:aLatitude longitude:[self locationLongitude]]];
+    return m_centerCoordinate;
 }
 
-- (float)locationLatitude
+- (void)setCenterCoordinateLatitude:(float)aLatitude
 {
-    return [[self location] latitude];
+    [self setCenterCoordinate:new CLLocationCoordinate2D(aLatitude, [self centerCoordinateLongitude])];
 }
 
-- (void)setLocationLongitude:(float)aLongitude
+- (float)centerCoordinateLatitude
 {
-    [self setLocation:[MKLocation locationWithLatitude:[self locationLatitude] longitude:aLongitude]];
+    return [self centerCoordinate].latitude;
 }
 
-- (float)locationLongitude
+- (void)setCenterCoordinateLongitude:(float)aLongitude
 {
-    return [[self location] longitude];
+    [self setCenterCoordinate:new CLLocationCoordinate2D([self centerCoordinateLatitude], aLongitude)];
+}
+
+- (float)centerCoordinateLongitude
+{
+    return [self centerCoordinate].longitude;
 }
 
 - (void)setZoomLevel:(float)aZoomLevel
@@ -213,7 +227,9 @@ MKMapTypeTerrain            = 3;
         if (aStatus !== google.maps.GeocoderStatus.OK)
             return;
 
-        [self setLocation:[[MKLocation alloc] initWithLatLng:results[0].geometry.location]];
+        var location = results[0].geometry.location;
+
+        [self setCenterCoordinate:CLLocationCoordinate2DFromLatLng(location)];
         [self setZoomLevel:7];
     });
 }
@@ -277,9 +293,9 @@ function _MKMapViewMapsLoaded()
     [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
 }
 
-var MKMapViewLocationKey    = @"MKMapViewLocationKey",
-    MKMapViewZoomLevelKey   = @"MKMapViewZoomLevelKey",
-    MKMapViewMapTypeKey     = @"MKMapViewMapTypeKey";
+var MKMapViewCenterCoordinateKey    = @"MKMapViewCenterCoordinateKey",
+    MKMapViewZoomLevelKey           = @"MKMapViewZoomLevelKey",
+    MKMapViewMapTypeKey             = @"MKMapViewMapTypeKey";
 
 @implementation MKMapView (CPCoding)
 
@@ -289,7 +305,7 @@ var MKMapViewLocationKey    = @"MKMapViewLocationKey",
 
     if (self)
     {
-        [self setLocation:[aCoder decodeObjectForKey:MKMapViewLocationKey]];
+        [self setCenterCoordinate:CLLocationCoordinate2DFromString([aCoder decodeObjectForKey:MKMapViewCenterCoordinateKey])];
         [self setZoomLevel:[aCoder decodeObjectForKey:MKMapViewZoomLevelKey]];
         [self setMapType:[aCoder decodeObjectForKey:MKMapViewMapTypeKey]];
 
@@ -303,7 +319,7 @@ var MKMapViewLocationKey    = @"MKMapViewLocationKey",
 {
     [super encodeWithCoder:aCoder];
 
-    [aCoder encodeObject:[self location] forKey:MKMapViewLocationKey];
+    [aCoder encodeObject:CPStringFromCLLocationCoordinate2D([self centerCoordinate]) forKey:MKMapViewCenterCoordinateKey];
     [aCoder encodeObject:[self zoomLevel] forKey:MKMapViewZoomLevelKey];
     [aCoder encodeObject:[self mapType] forKey:MKMapViewMapTypeKey];
 }

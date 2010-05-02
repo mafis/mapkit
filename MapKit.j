@@ -1,3 +1,4 @@
 
-@import "MKLocation.j"
+@import "MKGeometry.j"
 @import "MKMapView.j"
+@import "MKTypes.j"
