@@ -13,10 +13,10 @@
 
     BOOL                    m_scrollWheelZoomEnabled;
 
-    // Google Maps v3 DOM Support
+    // Google Maps v2 DOM Support
     DOMElement              m_DOMMapElement;
+    DOMElement              m_DOMGuardElement;
     Object                  m_map;
-    Object                  m_overlay;
 }
 
 + (CPSet)keyPathsForValuesAffectingCenterCoordinateLatitude
@@ -32,10 +32,10 @@
 + (int)_mapTypeIdForMapType:(MKMapType)aMapType
 {
     return  [
-                google.maps.MapTypeId.ROADMAP,
-                google.maps.MapTypeId.HYBRID,
-                google.maps.MapTypeId.SATELLITE,
-                google.maps.MapTypeId.TERRAIN
+                google.maps.G_NORMAL_MAP,
+                google.maps.G_HYBRID_MAP,
+                google.maps.G_SATELLITE_MAP,
+                google.maps.G_PHYSICAL_MAP
             ][aMapType];
 }
 
@@ -87,14 +87,13 @@
         // so we have to temporarily place it somewhere on the screen to appropriately size it.
         document.body.appendChild(m_DOMMapElement);
 
-        m_map = new google.maps.Map(m_DOMMapElement,
-        {
-            center:LatLngFromCLLocationCoordinate2D(m_centerCoordinate),
-            zoom:m_zoomLevel,
-            mapTypeId:[[self class] _mapTypeIdForMapType:m_mapType]
-        });
+        m_map = new google.maps.Map2(m_DOMMapElement);
 
-        google.maps.event.trigger(m_map, "resize");
+        m_map.setCenter(LatLngFromCLLocationCoordinate2D(m_centerCoordinate));
+        m_map.setZoom(m_zoomLevel);
+        m_map.setMapType([[self class] _mapTypeIdForMapType:m_mapType]);
+
+        google.maps.Event.trigger(m_map, "resize");
 
         style.left = "0px";
         style.top = "0px";
@@ -105,20 +104,20 @@
 
         _DOMElement.appendChild(m_DOMMapElement);
 
-        m_overlay = new google.maps.OverlayView();
+        m_DOMGuardElement = document.createElement("div");
 
-        m_overlay.draw = function() { };
-        m_overlay.setMap(m_map);
+        var style = m_DOMGuardElement.style;
 
-        _DOMElement.style["pointer-events"] = "none";
-/*
-        google.maps.Event.addListener(m_map, "zoomend", function(oldZoomLevel, newZoomLevel)
-        {
-            [self setZoomLevel:newZoomLevel];
+        style.overflow = "hidden";
+        style.position = "absolute";
+        style.visibility = "visible";
+        style.zIndex = 0;
+        style.left = "0px";
+        style.top = "0px";
+        style.width = "100%";
+        style.height = "100%";
 
-//            [[CPRunLoop currentRunLoop] limitDataForMode:CPDefaultRunLoopMode];
-        });
-*/
+        _DOMElement.appendChild(m_DOMGuardElement);
     });
 }
 
@@ -152,7 +151,10 @@
     m_region = aRegion;
 
     if (m_map)
-        m_map.fitBounds(LatLngBoundsFromMKCoordinateRegion(aRegion));
+    {
+        [self setZoomLevel:m_map.getBoundsZoomLevel(LatLngBoundsFromMKCoordinateRegion(aRegion))];
+        [self setCenterCoordinate:aRegion.center];
+    }
 }
 
 - (void)setCenterCoordinate:(CLLocationCoordinate2D)aCoordinate
@@ -206,7 +208,7 @@
     m_mapType = aMapType;
 
     if (m_map)
-        m_map.setMapTypeId([[self class] _mapTypeIdForMapType:m_mapType]);
+        m_map.setMapType([[self class] _mapTypeIdForMapType:m_mapType]);
 }
 
 - (MKMapType)mapType
@@ -229,18 +231,32 @@
 
 - (void)takeStringAddressFrom:(id)aSender
 {
-    var geocoder = new google.maps.Geocoder();
+    var geocoder = new google.maps.ClientGeocoder();
 
-    geocoder.geocode({ address:[aSender stringValue] }, function(results, aStatus)
+    geocoder.getLatLng([aSender stringValue], function(aLatLng)
     {
-        if (aStatus !== google.maps.GeocoderStatus.OK)
+        if (!aLatLng)
             return;
 
-        var location = results[0].geometry.location;
-
-        [self setCenterCoordinate:CLLocationCoordinate2DFromLatLng(location)];
+        [self setCenterCoordinate:CLLocationCoordinate2DFromLatLng(aLatLng)];
         [self setZoomLevel:7];
     });
+}
+
+- (void)mouseDown:(CPEvent)anEvent
+{
+    if ([anEvent clickCount] === 2)
+    {
+        m_map.zoomIn(LatLngFromCLLocationCoordinate2D([self convertPoint:[anEvent locationInWindow] toCoordinateFromView:nil]), YES, YES);
+        return;
+    }
+
+    [super mouseDown:anEvent];
+}
+
+- (BOOL)tracksMouseOutsideOfFrame
+{
+    return YES;
 }
 
 - (BOOL)startTrackingAt:(CGPoint)aPoint
@@ -274,7 +290,7 @@
     if (!m_map)
         return CGPointMakeZero();
 
-    var location = m_overlay.getProjection().fromLatLngToContainerPixel(LatLngFromCLLocationCoordinate2D(aCoordinate));
+    var location = m_map.fromLatLngToContainerPixel(LatLngFromCLLocationCoordinate2D(aCoordinate));
 
     return [self convertPoint:CGPointMake(location.x, location.y) toView:aView];
 }
@@ -285,7 +301,7 @@
         return new CLLocationCoordinate2D();
 
     var location = [self convertPoint:aPoint fromView:aView],
-        latlng = m_overlay.getProjection().fromContainerPixelToLatLng(new google.maps.Point(location.x, location.y));
+        latlng = m_map.fromContainerPixelToLatLng(new google.maps.Point(location.x, location.y));
 
     return CLLocationCoordinate2DFromLatLng(latlng);
 }
@@ -304,18 +320,29 @@ var performWhenGoogleMapsScriptLoaded = function(/*Function*/ aFunction)
     }
 
     // Maps is already loaded
-    if (window.google && google.maps && google.maps.Map)
+    if (window.google && google.maps && google.maps.Map2)
         _MKMapViewMapsLoaded();
 
     else
     {
         var DOMScriptElement = document.createElement("script");
 
-        DOMScriptElement.src = "http://maps.google.com/maps/api/js?sensor=false&callback=_MKMapViewMapsLoaded";
+        DOMScriptElement.src = "http://www.google.com/jsapi?callback=_MKMapViewGoogleAjaxLoaderLoaded";
+//        DOMScriptElement.src = "http://maps.google.com/maps/api/js?sensor=false&callback=_MKMapViewMapsLoaded";
         DOMScriptElement.type = "text/javascript";
 
         document.getElementsByTagName("head")[0].appendChild(DOMScriptElement);
     }
+}
+
+function _MKMapViewGoogleAjaxLoaderLoaded()
+{
+    google.load("maps", "2", { "callback": _MKMapViewMapsLoaded });
+
+    window.setTimeout(function()
+    {
+        [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
+    }, 500);
 }
 
 function _MKMapViewMapsLoaded()
