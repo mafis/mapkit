@@ -24,8 +24,18 @@ function MKCoordinateSpanFromLatLng(/*LatLng*/ aLatLng)
 
 function CLLocationCoordinate2D(/*CLLocationDegrees*/ aLatitude, /*CLLocationDegrees*/ aLongitude)
 {
-    this.latitude = aLatitude;
-    this.longitude = aLongitude;
+    if (arguments.length === 1)
+    {
+        var coordinate = arguments[0];
+
+        this.latitude = coordinate.latitude;
+        this.longitude = coordinate.longitude;
+    }
+    else
+    {
+        this.latitude = +aLatitude || 0;
+        this.longitude = +aLongitude || 0;
+    }
 
     return this;
 }

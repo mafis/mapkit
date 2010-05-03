@@ -5,7 +5,7 @@
 @import "MKTypes.j"
 
 
-@implementation MKMapView : CPView
+@implementation MKMapView : CPControl
 {
     CLLocationCoordinate2D  m_centerCoordinate;
     int                     m_zoomLevel;
@@ -91,7 +91,7 @@
         {
             center:LatLngFromCLLocationCoordinate2D(m_centerCoordinate),
             zoom:m_zoomLevel,
-            mapTypeId:[[self class] _mapTypeIdForMapType:m_mapType],
+            mapTypeId:[[self class] _mapTypeIdForMapType:m_mapType]
         });
 
         google.maps.event.trigger(m_map, "resize");
@@ -109,6 +109,8 @@
 
         m_overlay.draw = function() { };
         m_overlay.setMap(m_map);
+
+        _DOMElement.style["pointer-events"] = "none";
 /*
         google.maps.Event.addListener(m_map, "zoomend", function(oldZoomLevel, newZoomLevel)
         {
@@ -155,7 +157,7 @@
 
 - (void)setCenterCoordinate:(CLLocationCoordinate2D)aCoordinate
 {
-    m_centerCoordinate = aCoordinate;
+    m_centerCoordinate = new CLLocationCoordinate2D(aCoordinate);
 
     if (m_map)
         m_map.setCenter(LatLngFromCLLocationCoordinate2D(aCoordinate));
@@ -163,7 +165,7 @@
 
 - (CLLocationCoordinate2D)centerCoordinate
 {
-    return m_centerCoordinate;
+    return new CLLocationCoordinate2D(m_centerCoordinate);
 }
 
 - (void)setCenterCoordinateLatitude:(float)aLatitude
@@ -241,19 +243,30 @@
     });
 }
 
-- (void)mouseDown:(CPEvent)anEvent
+- (BOOL)startTrackingAt:(CGPoint)aPoint
 {
-    [[[self window] platformWindow] _propagateCurrentDOMEvent:YES];
+    return YES;
 }
 
-- (void)mouseDragged:(CPEvent)anEvent
+- (BOOL)continueTracking:(CGPoint)lastPoint at:(CGPoint)aPoint
 {
-    [[[self window] platformWindow] _propagateCurrentDOMEvent:YES];
+    var centerCoordinate = [self centerCoordinate],
+        lastCoordinate = [self convertPoint:lastPoint toCoordinateFromView:self],
+        currentCoordinate = [self convertPoint:aPoint toCoordinateFromView:self],
+        delta = new CLLocationCoordinate2D(
+            currentCoordinate.latitude - lastCoordinate.latitude,
+            currentCoordinate.longitude - lastCoordinate.longitude);
+
+    centerCoordinate.latitude -= delta.latitude;
+    centerCoordinate.longitude -= delta.longitude;
+
+    [self setCenterCoordinate:centerCoordinate];
+
+    return YES;
 }
 
-- (void)mouseUp:(CPEvent)anEvent
+- (void)stopTracking:(CGPoint)lastPoint at:(CGPoint)aPoint mouseIsUp:(BOOL)mouseIsUp
 {
-    [[[self window] platformWindow] _propagateCurrentDOMEvent:YES];
 }
 
 - (CGPoint)convertCoordinate:(CLLocationCoordinate2D)aCoordinate toPointToView:(CPView)aView
