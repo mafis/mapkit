@@ -155,9 +155,11 @@
                 centerCoordinate = [self centerCoordinate];
 
             if (!CLLocationCoordinate2DEqualToCLLocationCoordinate2D(centerCoordinate, newCenterCoordinate))
+            {
                 [self setCenterCoordinate:newCenterCoordinate];
 
-            [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
+                [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
+            }
         }
 
         var updateZoomLevel = function()
@@ -166,9 +168,11 @@
                 zoomLevel = [self zoomLevel];
 
             if (newZoomLevel !== zoomLevel)
+            {
                 [self setZoomLevel:newZoomLevel];
 
-            [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
+                [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
+            }
         }
 
         google.maps.Event.addListener(m_map, "moveend", updateCenterCoordinate);
@@ -299,6 +303,8 @@
 
         [self setCenterCoordinate:CLLocationCoordinate2DFromLatLng(aLatLng)];
         [self setZoomLevel:7];
+
+        [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
     });
 }
 
