@@ -29,13 +29,13 @@
     return [CPSet setWithObjects:@"centerCoordinate"];
 }
 
-+ (int)_mapTypeIdForMapType:(MKMapType)aMapType
++ (int)_mapTypeObjectForMapType:(MKMapType)aMapType
 {
     return  [
-                google.maps.G_NORMAL_MAP,
-                google.maps.G_HYBRID_MAP,
-                google.maps.G_SATELLITE_MAP,
-                google.maps.G_PHYSICAL_MAP
+                G_NORMAL_MAP,
+                G_HYBRID_MAP,
+                G_SATELLITE_MAP,
+                G_PHYSICAL_MAP
             ][aMapType];
 }
 
@@ -91,7 +91,7 @@
 
         m_map.setCenter(LatLngFromCLLocationCoordinate2D(m_centerCoordinate));
         m_map.setZoom(m_zoomLevel);
-        m_map.setMapType([[self class] _mapTypeIdForMapType:m_mapType]);
+        m_map.setMapType([[self class] _mapTypeObjectForMapType:m_mapType]);
 
         google.maps.Event.trigger(m_map, "resize");
 
@@ -208,7 +208,7 @@
     m_mapType = aMapType;
 
     if (m_map)
-        m_map.setMapType([[self class] _mapTypeIdForMapType:m_mapType]);
+        m_map.setMapType([[self class] _mapTypeObjectForMapType:m_mapType]);
 }
 
 - (MKMapType)mapType
