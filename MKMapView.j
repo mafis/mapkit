@@ -122,6 +122,32 @@
         style.height = "100%";
 
         _DOMElement.appendChild(m_DOMGuardElement);
+
+        var updateCenterCoordinate = function()
+        {
+            var newCenterCoordinate = CLLocationCoordinate2DFromLatLng(m_map.getCenter()),
+                centerCoordinate = [self centerCoordinate];
+
+            if (!CLLocationCoordinate2DEqualToCLLocationCoordinate2D(centerCoordinate, newCenterCoordinate))
+                [self setCenterCoordinate:newCenterCoordinate];
+
+            [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
+        }
+
+        var updateZoomLevel = function()
+        {
+            var newZoomLevel = m_map.getZoom(),
+                zoomLevel = [self zoomLevel];
+
+            if (newZoomLevel !== zoomLevel)
+                [self setZoomLevel:newZoomLevel];
+
+            [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
+        }
+
+        google.maps.Event.addListener(m_map, "moveend", updateCenterCoordinate);
+        google.maps.Event.addListener(m_map, "resize", updateCenterCoordinate);
+        google.maps.Event.addListener(m_map, "zoomend", updateZoomLevel);
     });
 }
 
@@ -162,6 +188,10 @@
 
 - (void)setCenterCoordinate:(CLLocationCoordinate2D)aCoordinate
 {
+    if (m_centerCoordinate &&
+        CLLocationCoordinate2DEqualToCLLocationCoordinate2D(m_centerCoordinate, aCoordinate))
+        return;
+
     m_centerCoordinate = new CLLocationCoordinate2D(aCoordinate);
 
     if (m_map)

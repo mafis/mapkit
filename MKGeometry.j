@@ -59,6 +59,11 @@ CLLocationCoordinate2D.prototype.toString = function()
     return CPStringFromCLLocationCoordinate2D(this);
 }
 
+function CLLocationCoordinate2DEqualToCLLocationCoordinate2D(/*CLLocationCoordinate2D*/ lhs, /*CLLocationCoordinate2D*/ rhs)
+{
+    return lhs === rhs || lhs.latitude === rhs.latitude && lhs.longitude === rhs.longitude;
+}
+
 function CLLocationCoordinate2DMake(/*CLLocationDegrees*/ aLatitude, /*CLLocationDegrees*/ aLongitude)
 {
     return new CLLocationCoordinate2D(aLatitude, aLongitude);
