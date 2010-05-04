@@ -87,13 +87,14 @@
         // so we have to temporarily place it somewhere on the screen to appropriately size it.
         document.body.appendChild(m_DOMMapElement);
 
-        m_map = new google.maps.Map2(m_DOMMapElement);
+        m_map = new google.maps.Map2(m_DOMMapElement, { size: new GSize(width, height) });
 
         m_map.setCenter(LatLngFromCLLocationCoordinate2D(m_centerCoordinate));
         m_map.setZoom(m_zoomLevel);
+        m_map.enableContinuousZoom();
         m_map.setMapType([[self class] _mapTypeObjectForMapType:m_mapType]);
 
-        google.maps.Event.trigger(m_map, "resize");
+        m_map.checkResize();
 
         style.left = "0px";
         style.top = "0px";
@@ -125,16 +126,15 @@
 {
     [super setFrameSize:aSize];
 
-    var bounds = [self bounds];
-
     if (m_DOMMapElement)
     {
-        var style = m_DOMMapElement.style;
+        var bounds = [self bounds],
+            style = m_DOMMapElement.style;
 
         style.width = CGRectGetWidth(bounds) + "px";
         style.height = CGRectGetHeight(bounds) + "px";
 
-        google.maps.event.trigger(m_map, "resize");
+        m_map.checkResize();
     }
 }
 
