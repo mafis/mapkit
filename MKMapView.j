@@ -5,13 +5,16 @@
 @import "MKTypes.j"
 
 
-@implementation MKMapView : CPControl
+@implementation MKMapView : CPView
 {
     CLLocationCoordinate2D  m_centerCoordinate;
     int                     m_zoomLevel;
     MKMapType               m_mapType;
 
     BOOL                    m_scrollWheelZoomEnabled;
+
+    // Tracking
+    BOOL                    m_previousTrackingLocation;
 
     // Google Maps v2 DOM Support
     DOMElement              m_DOMMapElement;
@@ -251,39 +254,48 @@
         return;
     }
 
+    [self trackPan:anEvent];
+
     [super mouseDown:anEvent];
 }
 
-- (BOOL)tracksMouseOutsideOfFrame
+- (void)trackPan:(CPEvent)anEvent
 {
-    return YES;
+    var type = [anEvent type],
+        currentLocation = [self convertPoint:[anEvent locationInWindow] fromView:nil];
+
+    if (type === CPLeftMouseUp)
+    {
+        // Do nothing.
+    }
+
+    else
+    {
+        if (type === CPLeftMouseDown)
+        {
+            // Do nothing.
+        }
+        else if (type === CPLeftMouseDragged)
+        {
+            var centerCoordinate = [self centerCoordinate],
+                lastCoordinate = [self convertPoint:m_previousTrackingLocation toCoordinateFromView:self],
+                currentCoordinate = [self convertPoint:currentLocation toCoordinateFromView:self],
+                delta = new CLLocationCoordinate2D(
+                    currentCoordinate.latitude - lastCoordinate.latitude,
+                    currentCoordinate.longitude - lastCoordinate.longitude);
+
+            centerCoordinate.latitude -= delta.latitude;
+            centerCoordinate.longitude -= delta.longitude;
+
+            [self setCenterCoordinate:centerCoordinate];
+        }
+
+        [CPApp setTarget:self selector:@selector(trackPan:) forNextEventMatchingMask:CPLeftMouseDraggedMask | CPLeftMouseUpMask untilDate:nil inMode:nil dequeue:YES];
+    }
+
+    m_previousTrackingLocation = currentLocation;
 }
 
-- (BOOL)startTrackingAt:(CGPoint)aPoint
-{
-    return YES;
-}
-
-- (BOOL)continueTracking:(CGPoint)lastPoint at:(CGPoint)aPoint
-{
-    var centerCoordinate = [self centerCoordinate],
-        lastCoordinate = [self convertPoint:lastPoint toCoordinateFromView:self],
-        currentCoordinate = [self convertPoint:aPoint toCoordinateFromView:self],
-        delta = new CLLocationCoordinate2D(
-            currentCoordinate.latitude - lastCoordinate.latitude,
-            currentCoordinate.longitude - lastCoordinate.longitude);
-
-    centerCoordinate.latitude -= delta.latitude;
-    centerCoordinate.longitude -= delta.longitude;
-
-    [self setCenterCoordinate:centerCoordinate];
-
-    return YES;
-}
-
-- (void)stopTracking:(CGPoint)lastPoint at:(CGPoint)aPoint mouseIsUp:(BOOL)mouseIsUp
-{
-}
 
 - (CGPoint)convertCoordinate:(CLLocationCoordinate2D)aCoordinate toPointToView:(CPView)aView
 {
