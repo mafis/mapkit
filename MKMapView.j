@@ -407,10 +407,7 @@ function _MKMapViewGoogleAjaxLoaderLoaded()
 {
     google.load("maps", "2", { "callback": _MKMapViewMapsLoaded });
 
-    window.setTimeout(function()
-    {
-        [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
-    }, 500);
+    [[CPRunLoop currentRunLoop] limitDateForMode:CPDefaultRunLoopMode];
 }
 
 function _MKMapViewMapsLoaded()

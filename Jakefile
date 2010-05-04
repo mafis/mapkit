@@ -21,8 +21,8 @@ bundle ("MapKit", function(task)
     task.setEmail("feedback @nospam@ 280north.com");
     task.setSummary("Plugin framework for Atlas");
     task.setIdentifier("com.280n.MapKit");
-    task.setSources(new FileList("*.j").exclude("MapKitPlugin.j"), [environment.Browser, environment.CommonJS]);
-    task.setResources(new FileList("Resources/*").exclude("Resources/MapKitLibrary.xib"));
+    task.setSources(new FileList("*.j").exclude("MapKitPlugin.j").exclude("MKMapViewAttributeInspector.j").exclude("MKMapView+Integration.j"), [environment.Browser, environment.CommonJS]);
+    task.setResources([]);//All the resources belong to the plugin
     task.setFlattensSources(true);
 
     if ($CONFIGURATION === "Release")
