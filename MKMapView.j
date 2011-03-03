@@ -47,7 +47,7 @@
     DOMElement              m_DOMGuardElement;
     Object                  m_map;
 
-    @outlet id delegate;
+    @outlet id delegate @accessors;
 
 }
 
