@@ -105,11 +105,11 @@
     height = "100%";
   }
   _DOMElement.appendChild(m_DOMMapElement);
-  if(typeof(google)=="undefined"){
+  //if(typeof(google)=="undefined"){
     var url = 'http://maps.google.com/maps/api/js?sensor=true';
     var request = [CPURLRequest requestWithURL:url];
     var conn = [CPJSONPConnection sendRequest:request callback:"callback" delegate:self];
-  } else [self _buildMap];
+  //} else [self _buildMap];
 }
 
 -(void)connectionDidFinishLoading:(CPURLConnection)connection
@@ -258,8 +258,8 @@
 - (void)layoutSubviews
 {
 	if (!m_map) return;
-	google.maps.event.trigger(m_map, 'resize');
-  
+  google.maps.event.addListenerOnce(m_map, 'resize', function(coordinate){m_map.panTo(coordinate);}) //keep the center centered
+	google.maps.event.trigger(m_map, 'resize', LatLngFromCLLocationCoordinate2D([self centerCoordinate]));
   
 }
 
