@@ -167,7 +167,7 @@
     m_centerCoordinate = new CLLocationCoordinate2D(aCoordinate);
 
     if (m_map)
-        m_map.setCenter(LatLngFromCLLocationCoordinate2D(aCoordinate));
+        m_map.panTo(LatLngFromCLLocationCoordinate2D(m_centerCoordinate));
 }
 
 - (CLLocationCoordinate2D)centerCoordinate
@@ -263,6 +263,11 @@
   
 }
 
+- (void)addMarker:(MKMarker)aMarker
+{
+  gmarker = [aMarker gmarker];
+  if(m_map)gmarker.setMap(m_map);
+}
 @end
 
 var MKMapViewCenterCoordinateKey    = @"MKMapViewCenterCoordinateKey",
