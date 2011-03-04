@@ -28,3 +28,5 @@
 @import "MKGeometry.j"
 @import "MKMapView.j"
 @import "MKTypes.j"
+@import "MKGeocoder.j"
+@import "MKMarker.j"
