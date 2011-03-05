@@ -21,7 +21,6 @@
   var value = null;
 
   geocoder.geocode({ address: anAddress}, function(inResult, inGeocoderStatus) {
-      debugger;
       if (inGeocoderStatus != google.maps.GeocoderStatus.OK)
       return;
 
