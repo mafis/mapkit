@@ -128,8 +128,20 @@
   }
   m_map = new google.maps.Map(m_DOMMapElement, myOptions);
   if(delegate){
-    [delegate loadedMap:self];
+  
+  	 if([delegate respondsToSelector:@selector(loadedMap:)])
+	 {
+    	[delegate loadedMap:self];
+     }
   }
+  
+  new google.maps.event.addListener(m_map, 'click', function(event) { 
+  	if([delegate respondsToSelector:@selector(mapView:didClickedAtLocation:)])
+	 {
+		 [delegate mapView:self didClickedAtLocation:CLLocationCoordinate2DFromLatLng(event.latLng)];
+	 }
+  });
+  
 }
 
 - (Object) namespace {
