@@ -4,6 +4,7 @@
 @implementation MKGeocoder : CPObject
 {
   id delegate @accessors;
+ 
 }
 
 - (id)init
@@ -32,6 +33,7 @@
       value = CLLocationCoordinate2DFromLatLng(resultLatLng);
       objj_msgSend([self delegate], aSelector, value);
       });
-  
 }
+
+
 @end
