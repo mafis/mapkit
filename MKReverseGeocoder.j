@@ -57,11 +57,13 @@
 
         	};	
         	
-        	var placemark = [[MKPlacemark alloc] initWithCoordinate:coordinate addressDictionary:adressDictionary];       	
+        	self.placemark = [[MKPlacemark alloc] initWithCoordinate:coordinate addressDictionary:adressDictionary];       	
+        	        	
+        	       
         	        	
         	if([delegate respondsToSelector:@selector(reverseGeocoder:didFindPlacemark:)])
 			{
-				[delegate reverseGeocoder:self didFindPlacemark:placemark];
+				[delegate reverseGeocoder:self didFindPlacemark:self.placemark];
 			}
 
         /*

@@ -3,37 +3,59 @@
 
 @implementation MKGeocoder : CPObject
 {
+  CPString address @accessors(readonly);
+  CLLocationCoordinate2D coordinate @accessors(readonly);
+
   id delegate @accessors;
  
 }
 
-- (id)init
+- (id)initWithAdress:(CPString)anAddress
 {
     if (self = [super init])
     {
-        
+        self.address = anAddress;
     }
     return self;
 }
 
-- (void)geocodeAddress:(CPString)anAddress doneSelector:(SEL)aSelector
+-(void)cancel
+{
+	
+}
+
+-(void)start
 {
   var geocoder = new google.maps.Geocoder();
-  var value = null;
 
-  geocoder.geocode({ address: anAddress}, function(inResult, inGeocoderStatus) {
-      if (inGeocoderStatus != google.maps.GeocoderStatus.OK)
-      return;
+  geocoder.geocode({ address: address}, function(inResult, inGeocoderStatus) {
+      if (inGeocoderStatus != google.maps.GeocoderStatus.OK || inResult.length == 0)
+      {
+	      if([delegate respondsToSelector:@selector(geocoder:didFailWithError:)])
+		  {
+		  	//TODO : Better Error Message
+				[delegate geocoder:self didFailWithError:@"Geocoding error"];
+		  }
 
-      if (inResult.length == 0)
-      return;
+      }
+      else
+      {
+        var resultLatLng = inResult && inResult[0] && inResult[0].geometry && inResult[0].geometry.location;
 
-      var resultLatLng = inResult && inResult[0] && inResult[0].geometry && inResult[0].geometry.location;
-      if (!resultLatLng) return;
-      value = CLLocationCoordinate2DFromLatLng(resultLatLng);
-      objj_msgSend([self delegate], aSelector, value);
-      });
+		self.coordinate = CLLocationCoordinate2DFromLatLng(resultLatLng);
+
+      	
+	    if([delegate respondsToSelector:@selector(geocoder:didFindLocation:)])
+		{
+			[delegate geocoder:self didFindLocation:self.coordinate];
+		}
+
+      }
+
+  });
+	
 }
+
 
 
 @end
