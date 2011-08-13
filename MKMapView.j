@@ -194,9 +194,16 @@
 
 - (void)setCenterCoordinate:(CLLocationCoordinate2D)aCoordinate
 {
+	
+	
+	if(aCoordinate === CPNoSelectionMarker || (aCoordinate.longitude == 0 && aCoordinate.latitude == 0))
+		return;
+	
     if (m_centerCoordinate &&
         CLLocationCoordinate2DEqualToCLLocationCoordinate2D(m_centerCoordinate, aCoordinate))
         return;
+    
+
     	
     m_centerCoordinate = new CLLocationCoordinate2D(aCoordinate);
     [self _reverseSetBinding];
