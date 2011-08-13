@@ -31,7 +31,7 @@
 @import "MKTypes.j"
 
 
-@implementation MKMapView : CPView
+@implementation MKMapView : CPControl
 {
     CLLocationCoordinate2D  m_centerCoordinate;
     int                     m_zoomLevel;
@@ -50,6 +50,22 @@
     @outlet id delegate @accessors;
 
 }
+
++ (void)initialize
+{
+	[self exposeBinding:@"centerCoordinate"];
+}
+ 
++ (Class)_binderClassForBinding:(CPString)theBinding
+{
+console.log(theBinding);
+    if (theBinding === CPValueBinding)
+        return [_CPValueBinder class];
+	
+    return [super _binderClassForBinding:theBinding];
+}
+
+
 
 + (CPSet)keyPathsForValuesAffectingCenterCoordinateLatitude
 {
@@ -143,6 +159,10 @@
 	 }
   });
   
+  new google.maps.event.addListener(m_map, 'center_changed', function(event){
+	  [self setValue:CLLocationCoordinate2DFromLatLng(m_map.getCenter()) forKey:@"centerCoordinate"];
+  });
+  
 }
 
 - (Object) namespace {
@@ -176,11 +196,18 @@
     if (m_centerCoordinate &&
         CLLocationCoordinate2DEqualToCLLocationCoordinate2D(m_centerCoordinate, aCoordinate))
         return;
+    
+	    
 
     m_centerCoordinate = new CLLocationCoordinate2D(aCoordinate);
-
+    
+    [self _reverseSetBinding];
+    
     if (m_map)
         m_map.panTo(LatLngFromCLLocationCoordinate2D(m_centerCoordinate));
+        
+        	
+
 }
 
 - (CLLocationCoordinate2D)centerCoordinate
