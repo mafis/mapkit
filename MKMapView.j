@@ -124,7 +124,8 @@
     zoom: [self zoomLevel],
     center: myLatlng,
     mapTypeId: [[self class] _mapTypeObjectForMapType:[self mapType]],
-    scrollwheel: [self scrollWheelZoomEnabled]
+    scrollwheel: [self scrollWheelZoomEnabled],
+    disableDefaultUI: true,
   }
   m_map = new google.maps.Map(m_DOMMapElement, myOptions);
   if(delegate){

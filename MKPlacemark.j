@@ -15,8 +15,48 @@
    CPString country @accessors(readonly);
    CPString countryCode @accessors(readonly);
 
+   CPString formattedAddress @accessors(readonly);
    
-   
+}
+
+-(id)initWithJSON:(JSObject)aJson
+{
+	var addDic  = [[CPMutableDictionary alloc] init];
+       	
+  	for (var i = 0; i < aJson.address_components.length; i++) {
+		  var component =  aJson.address_components[i];
+       		  
+  		 for (var j=0; j < component.types.length; j++) {
+     			var type = component.types[j];
+      			if(j == 0)
+       			{
+        			[addDic setValue:component.long_name forKey:type];
+       			}
+      			
+       			if(j == 1)
+       			{
+        			[addDic setValue:component.short_name forKey:type];
+       			}
+       		};
+      };	
+      
+      
+    var coordinate;
+
+    if(aJson && aJson && aJson.geometry)
+    {
+	    var resultLatLng = aJson.geometry.location;
+	    coordinate = CLLocationCoordinate2DFromLatLng(resultLatLng);
+
+    }        	
+    
+    if(self = [self initWithCoordinate:coordinate addressDictionary:addDic])
+    {
+	    [self setValue:aJson.formatted_address forKey:@"formattedAddress"];
+	    
+    }    
+    
+    return self;
 }
 
 - (id)initWithCoordinate:(CLLocationCoordinate2D)aCoordinate addressDictionary:(CPDictionary)aAddressDictionary

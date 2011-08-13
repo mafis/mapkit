@@ -1,10 +1,12 @@
 
 @import <Foundation/CPObject.j>
+@import "MKPlacemark.j"
 
 @implementation MKGeocoder : CPObject
 {
-  CPString address @accessors(readonly);
   CLLocationCoordinate2D coordinate @accessors(readonly);
+  
+  CPPlacemark placemark @accessors(readonly);
 
   id delegate @accessors;
  
@@ -40,10 +42,9 @@
       }
       else
       {
-        var resultLatLng = inResult && inResult[0] && inResult[0].geometry && inResult[0].geometry.location;
-
-		self.coordinate = CLLocationCoordinate2DFromLatLng(resultLatLng);
-
+     	self.placemark = [[MKPlacemark alloc] initWithJSON:inResult[0]];       	
+      
+      	self.coordinate = self.placemark.coordinate;
       	
 	    if([delegate respondsToSelector:@selector(geocoder:didFindLocation:)])
 		{

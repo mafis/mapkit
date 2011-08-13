@@ -33,33 +33,8 @@
       if (status == google.maps.GeocoderStatus.OK)
       {
         if (results[0]) {
-        	        	
-        	var adressDictionary  = [[CPMutableDictionary alloc] init];
-        	
-        	var addressComponents = results[0].address_components;
-        	
-       	
-        	for (var i = 0; i < addressComponents.length; i++) {
-        		  var component =  addressComponents[i];
-       		  
-        		 for (var j=0; j < component.types.length; j++) {
-        			var type = component.types[j];
-        			if(j == 0)
-        			{
-	        			[adressDictionary setValue:component.long_name forKey:type];
-        			}
-        			
-        			if(j == 1)
-        			{
-	        			[adressDictionary setValue:component.short_name forKey:type];
-        			}
-        		};
-
-        	};	
-        	
-        	self.placemark = [[MKPlacemark alloc] initWithCoordinate:coordinate addressDictionary:adressDictionary];       	
-        	        	
-        	       
+        	self.placemark = [[MKPlacemark alloc] initWithJSON:results[0]];       	
+        	        	       	       
         	        	
         	if([delegate respondsToSelector:@selector(reverseGeocoder:didFindPlacemark:)])
 			{
