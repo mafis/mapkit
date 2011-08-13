@@ -31,7 +31,7 @@
 @import "MKTypes.j"
 
 
-@implementation MKMapView : CPControl
+@implementation MKMapView : CPView
 {
     CLLocationCoordinate2D  m_centerCoordinate;
     int                     m_zoomLevel;
@@ -58,7 +58,6 @@
  
 + (Class)_binderClassForBinding:(CPString)theBinding
 {
-console.log(theBinding);
     if (theBinding === CPValueBinding)
         return [_CPValueBinder class];
 	
@@ -159,7 +158,9 @@ console.log(theBinding);
 	 }
   });
   
-  new google.maps.event.addListener(m_map, 'center_changed', function(event){
+  
+  
+  new google.maps.event.addListener(m_map, 'mouseup', function(event){
 	  [self setValue:CLLocationCoordinate2DFromLatLng(m_map.getCenter()) forKey:@"centerCoordinate"];
   });
   
@@ -196,18 +197,21 @@ console.log(theBinding);
     if (m_centerCoordinate &&
         CLLocationCoordinate2DEqualToCLLocationCoordinate2D(m_centerCoordinate, aCoordinate))
         return;
-    
-	    
-
+    	
     m_centerCoordinate = new CLLocationCoordinate2D(aCoordinate);
-    
     [self _reverseSetBinding];
     
+    
     if (m_map)
-        m_map.panTo(LatLngFromCLLocationCoordinate2D(m_centerCoordinate));
-        
-        	
+       m_map.panTo(LatLngFromCLLocationCoordinate2D(m_centerCoordinate));
+}
 
+- (void)_reverseSetBinding
+{
+    var binderClass = [[self class] _binderClassForBinding:CPValueBinding],
+        theBinding = [binderClass getBinding:@"centerCoordinate" forObject:self];
+
+    [theBinding reverseSetValueFor:@"centerCoordinate"];
 }
 
 - (CLLocationCoordinate2D)centerCoordinate
@@ -324,13 +328,6 @@ console.log(theBinding);
 }
 
 
-- (void)layoutSubviews
-{
-	if (!m_map) return;
-  google.maps.event.addListenerOnce(m_map, 'resize', function(coordinate){m_map.panTo(coordinate);}) //keep the center centered
-	google.maps.event.trigger(m_map, 'resize', LatLngFromCLLocationCoordinate2D([self centerCoordinate]));
-  
-}
 
 @end
 
