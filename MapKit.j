@@ -30,3 +30,4 @@
 @import "MKTypes.j"
 @import "MKGeocoder.j"
 @import "MKMarker.j"
+@import "MKAnnotation.j"

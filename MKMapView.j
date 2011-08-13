@@ -259,15 +259,44 @@
     return m_scrollWheelZoomEnabled;
 }
 
-- (void)addMarkerWithTitle:(CPString)aTitle atCoordinate:(CLLocationCoordinate2D)aCoordinate
+- (void)addAnnotation:(MKAnnotation)annotation
 {
-
-  var marker = new google.maps.Marker({
-      position: LatLngFromCLLocationCoordinate2D(aCoordinate), 
-      map: m_map, 
-      title:aTitle
-  });   
+	
+	[self addAnnotations:[CPArray arrayWithObject:annotation]];
 }
+
+- (void)addAnnotations:(CPArray)annotations
+{
+	var annotationsCount = [annotations count];
+	
+	for (var i =0; i < annotationsCount; i++) {
+		var annotation = annotations[i]
+		
+		[annotation _marker].setMap(m_map);
+	};
+
+}
+
+- (void)removeAnnotation:(MKAnnotation)annotation
+{
+	
+	[self removeAnnotation:[CPArray arrayWithObject:annotation]];
+}
+
+- (void)removeAnnotations:(CPArray)annotations
+{
+	var annotationsCount = [annotations count];
+	
+	for (var i =0; i < annotationsCount; i++) {
+		var annotation = annotations[i]
+		
+		[annotation _marker].setMap(null);
+	};
+	
+	
+}
+
+
 - (void)layoutSubviews
 {
 	if (!m_map) return;
@@ -276,11 +305,6 @@
   
 }
 
-- (void)addMarker:(MKMarker)aMarker
-{
-  gmarker = [aMarker gmarker];
-  if(m_map)gmarker.setMap(m_map);
-}
 @end
 
 var MKMapViewCenterCoordinateKey    = @"MKMapViewCenterCoordinateKey",
