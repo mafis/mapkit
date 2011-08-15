@@ -97,11 +97,6 @@ optiones = {};
     return [self initWithFrame:aFrame centerCoordinate:nil];
 }
 
-- (void)viewWillDraw
-{
-	console.log("Draw REct");
-	[super viewWillDraw];
-}
 
 - (id)initWithFrame:(CGRect)aFrame centerCoordinate:(CLLocationCoordinate2D)aCoordinate
 {
@@ -127,7 +122,7 @@ optiones = {};
 {
 
   domelements[[self UID]] = document.createElement('div');
-  domelements[[self UID]].setAttribute('id',[self UID],0);
+  domelements[[self UID]].setAttribute('id',"map_view_canvas_"+[self UID],0);
   with (domelements[[self UID]].style) {
     position = "absolute";
     left = "0px";
