@@ -30,9 +30,6 @@
 @import "MKGeometry.j"
 @import "MKTypes.j"
 
-maps = {};
-domelements = {};
-optiones = {};
 
 @implementation MKMapView : CPView
 {
@@ -45,13 +42,16 @@ optiones = {};
     // Tracking
     BOOL                    m_previousTrackingLocation;
 
-    // Google Maps v2 DOM Support
-   // DOMElement              m_DOMMapElement;
-//Object                  [self namespace];
+    // Google Maps v3 DOM Support
+   	DOMElement              m_DOMMapElement;
+	Object                  m_map;
 
     @outlet id delegate @accessors;
     
     CPArray annotations @accessors(readonly);
+    
+    
+    CPDictionary markerDictionary;
 
 }
 
@@ -111,6 +111,8 @@ optiones = {};
         [self setScrollWheelZoomEnabled:YES];
         
         annotations = [CPArray array];
+        
+        markerDictionary = [[CPDictionary alloc] init];
 
         [self _buildDOM];
     }
@@ -121,28 +123,27 @@ optiones = {};
 
 - (void)_buildDOM
 {
-	console.log("buildDom" + [self UID]);
 
-  domelements[[self UID]] = document.createElement('div');
-  domelements[[self UID]].setAttribute('id',"map_view_canvas_"+[self UID],0);
-  with (domelements[[self UID]].style) {
+  m_DOMMapElement = document.createElement('div');
+  m_DOMMapElement.setAttribute('id',"map_view_canvas_"+[self UID],0);
+  with (m_DOMMapElement.style) {
     position = "absolute";
     left = "0px";
     top = "0px";
     width = "100%";
     height = "100%";
   }
-  _DOMElement.appendChild(domelements[[self UID]]);
+  _DOMElement.appendChild(m_DOMMapElement);
   
   var myLatlng = LatLngFromCLLocationCoordinate2D([self centerCoordinate]);
-  optiones[[self UID]] = {
+  optiones = {
     zoom: [self zoomLevel],
     center: myLatlng,
     mapTypeId: [[self class] _mapTypeObjectForMapType:[self mapType]],
     scrollwheel: [self scrollWheelZoomEnabled],
     disableDefaultUI: true,
   }
-  maps[[self UID]] = new google.maps.Map(domelements[[self UID]], optiones[[self UID]]);
+  m_map = new google.maps.Map(m_DOMMapElement, optiones);
   if(delegate){
   
   	 if([delegate respondsToSelector:@selector(loadedMap:)])
@@ -168,7 +169,7 @@ optiones = {};
 
 - (Object) namespace {
   
-  return maps[[self UID]];
+  return m_map;
   
 }
 
@@ -316,7 +317,24 @@ optiones = {};
 	for (var i =0; i < annotationsCount; i++) {
 		var annotation = aAnnotationArray[i];
 		
-		[annotation _marker].setMap([self namespace]);
+		var marker = null;
+		
+		if([markerDictionary valueForKey:[annotation UID]])
+		{
+			marker = [markerDictionary valueForKey:[annotation UID]];
+			marker.setMap([self namespace]);
+		}
+		else
+		{
+			
+			var marker = new google.maps.Marker({
+    			position: LatLngFromCLLocationCoordinate2D([annotation coordinate]),
+    			map: [self namespace]
+	  		});
+  			[markerDictionary setValue:marker forKey:[annotation UID]];
+
+			
+		}
 		
 		[annotations addObject:annotation];
 	};
@@ -338,7 +356,14 @@ optiones = {};
 		
 		if(annotation)
 		{
-			[annotation _marker].setMap(null);
+			var marker = [markerDictionary valueForKey:[annotation UID]];
+
+			if(marker)
+	  		{
+				marker.setMap(null);
+				[markerDictionary setValue:null forKey:[annotation UID]];	
+	  		}		
+			
 			[annotations removeObject:annotation];
 		}
 	};
