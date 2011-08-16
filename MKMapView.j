@@ -118,8 +118,10 @@ optiones = {};
     return self;
 }
 
+
 - (void)_buildDOM
 {
+	console.log("buildDom" + [self UID]);
 
   domelements[[self UID]] = document.createElement('div');
   domelements[[self UID]].setAttribute('id',"map_view_canvas_"+[self UID],0);
@@ -132,20 +134,6 @@ optiones = {};
   }
   _DOMElement.appendChild(domelements[[self UID]]);
   
-  //if(typeof(google)=="undefined"){
-    var url = 'http://maps.google.com/maps/api/js?sensor=true';
-    var request = [CPURLRequest requestWithURL:url];
-    var conn = [CPJSONPConnection sendRequest:request callback:"callback" delegate:self];
-  //} else [self _buildMap];
-}
-
--(void)connectionDidFinishLoading:(CPURLConnection)connection
-{
-  [self _buildMap];
-}
-
--(void)_buildMap
-{
   var myLatlng = LatLngFromCLLocationCoordinate2D([self centerCoordinate]);
   optiones[[self UID]] = {
     zoom: [self zoomLevel],
@@ -358,6 +346,10 @@ optiones = {};
 	
 }
 
+-(void)layoutSubviews
+{
+	google.maps.event.trigger([self namespace], 'resize');
+}
 
 
 @end
