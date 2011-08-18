@@ -56,16 +56,142 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 
     @outlet id delegate @accessors;
     
-    CPArray annotations @accessors(readonly);
-    
-    CPArray annotationViews;
+  
     
     
     CPDictionary markerDictionary;
 
 	var canvasProjectionOverlay;
+	
+	//New
+	
+	BOOL zoomEnabled @accessors(readonly, getter=isZoomEnabled);
+	
+	BOOL scrollEnabled @accessors(readonly, getter=isScrollEnabled);
+	
+	MKMapRect visibleMapRect;
+	
+	
+	//Annotations
+	CPArray annotations @accessors(readonly);
+    
+    CPArray annotationViews;
+	
+	CGRect annotationVisibleRect @accessors(readonly);
+	
+	CPArray selectedAnnotations @accessors();
+	
+	//Overlays TODO:Implement
+	CPArray overlays @accessors(readonly);
+	
+	//DUMMY
+	BOOL showsUserLocation @accessors();
+	BOOL userLocationVisible @accessors(getter=isUserLocationVisible);
+	var userLocation @accessors(readonly);
+}
+//Converting Map Coordinates
+- (CGPoint)convertCoordinate:(CLLocationCoordinate2D)coordinate toPointToView:(CPView)view
+{
+	
+}
+
+- (CLLocationCoordinate2D)convertPoint:(CGPoint)point toCoordinateFromView:(CPView)view
+{
+	
+}
+
+- (MKCoordinateRegion)convertRect:(CGRect)rect toRegionFromView:(CPView)view
+{
+	
+}
+
+- (CGRect)convertRegion:(MKCoordinateRegion)region toRectToView:(CPView)view
+{
+	
+}
+
+//Adjusting Map Regions and Rectangles
+- (MKCoordinateRegion)regionThatFits:(MKCoordinateRegion)region
+{
+	
+}
+
+- (MKMapRect)mapRectThatFits:(MKMapRect)mapRect
+{
+	
+	
+}
+
+- (MKMapRect)mapRectThatFits:(MKMapRect)mapRect edgePadding:(UIEdgeInsets)insets
+{
+		
+}
+
+//Annotations
+
+-(void)setSelectedAnnotations:(CPArray)aSelectedAnnotations
+{
+	
+}
+
+-(void)selectAnnotation:(MKAnnotation) animated:(BOOL)animated
+{
+	
+}
+
+-(void)deselectAnnotation:(MKAnnotation) animated:(BOOL)animated
+{
+	
+}
 
 
+
+- (MKAnnotationView)dequeueReusableAnnotationViewWithIdentifier:(CPString)identifier
+{
+	
+}
+
+- (MKAnnotationView)viewForAnnotation:(MKAnnotation)annotation
+{
+	
+	
+}
+
+-(CPSet)annotationsInMapRect:(MKMapRect)mapRect
+{
+	
+}
+
+//Manipulating the Visible Portion of the Map
+-(void)setMKMapRect:(MKMapRect)aVisibleMapRect
+{
+	
+}
+
+-(void)setMKMapRect:(MKMapRect)aVisibleMapRect animated:(BOOL)animated
+{
+	
+}
+
+
+-(void)setMKMapRect:(MKMapRect)aVisibleMapRect edgePadding:(UIEdgeInsets)insets animated:(BOOL)animate
+{
+	
+}
+
+-(MKMapRect)MKMapRect
+{
+	
+}
+
+-(void)setZoomEnabled:(BOOL)enabled
+{
+	
+}
+
+-(void)setScrollEnabled:(BOOL)enabled
+{
+	
 }
 
 
@@ -226,6 +352,11 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
     }
 }
 
+- (void)setRegion:(MKCoordinateRegion)aRegion animted:(BOOL)animated
+{
+
+}
+
 - (void)setCenterCoordinate:(CLLocationCoordinate2D)aCoordinate
 {
 	
@@ -244,7 +375,11 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 
     if ([self namespace])
        [self namespace].panTo(LatLngFromCLLocationCoordinate2D(m_centerCoordinate));
+}
 
+- (void)setCenterCoordinate:(CLLocationCoordinate2D)aCoordinate animated:(BOOL)animated
+{
+	
 }
 
 -(void)setObjectValue:(id)aValue
