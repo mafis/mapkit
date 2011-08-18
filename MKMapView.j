@@ -81,6 +81,8 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 	
 	CPArray selectedAnnotations @accessors();
 	
+	CPArray _dequeueAnnotationViews;
+	
 	//Overlays TODO:Implement
 	CPArray overlays @accessors(readonly);
 	
@@ -92,12 +94,26 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 //Converting Map Coordinates
 - (CGPoint)convertCoordinate:(CLLocationCoordinate2D)coordinate toPointToView:(CPView)view
 {
-	
+	  var point = CPPointMake(-100,-100);
+	  
+	  if(canvasProjectionOverlay)
+	  {
+		  point = canvasProjectionOverlay.getProjection().fromLatLngToContainerPixel(coordinate);
+	  }
+	  
+	  return point;
 }
 
 - (CLLocationCoordinate2D)convertPoint:(CGPoint)point toCoordinateFromView:(CPView)view
 {
+	var location = CLLocationCoordinate2DMake(0.0,0.0);
 	
+	if(canvasProjectionOverlay)
+	{
+		location = canvasProjectionOverlay.getProjection().fromContainerPixelToLatLng(point);
+	}
+	  
+	return location;
 }
 
 - (MKCoordinateRegion)convertRect:(CGRect)rect toRegionFromView:(CPView)view
@@ -145,15 +161,24 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 }
 
 
-
 - (MKAnnotationView)dequeueReusableAnnotationViewWithIdentifier:(CPString)identifier
 {
+	var annotationView = [_dequeueAnnotationViews lastObject];
+	[_dequeueAnnotationViews removeLastObject];
 	
+	return annotationView;
 }
 
 - (MKAnnotationView)viewForAnnotation:(MKAnnotation)annotation
 {
+	var annotationView = null;
 	
+	if([delegate respondsToSelector:@selector(mapView:viewForAnnotation:)])
+	{
+		annotationView = [delegate mapView:self viewForAnnotation:annotation];
+	}
+	
+	return annotationView;
 	
 }
 
@@ -161,6 +186,18 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 {
 	
 }
+
+
+-(void)_refreshAnnotationsForRegion
+{
+	
+}
+
+-(void)_refreshAnnotation:(MKAnnotation)aAnnotation
+{
+	
+}
+
 
 //Manipulating the Visible Portion of the Map
 -(void)setMKMapRect:(MKMapRect)aVisibleMapRect
@@ -251,6 +288,7 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
         
         annotations = [CPArray array];
         annotationViews = [CPArray array];
+        _dequeueAnnotationViews = [CPArray array];
         
         markerDictionary = [[CPDictionary alloc] init];
 
@@ -332,6 +370,7 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
   return m_map;
   
 }
+
 
 - (MKCoordinateRegion)region
 {
