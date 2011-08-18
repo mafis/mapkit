@@ -13,6 +13,8 @@
 	CPPoint centerOffset @accessors();
 	BOOL draggable @accessors(getter=isDraggable);
 	
+	id delegate @accessors();
+	
 	//TODO : Dragstate
 }
 
@@ -41,6 +43,16 @@
 	
 }*/
 
+
+- (void)mouseDown:(CPEvent)anEvent	
+{
+	if([delegate respondsToSelector:@selector(annotationViewdidSelected:)])
+	{
+		[delegate annotationViewdidSelected:self]
+	}
+
+	CPLog.debug("Mouse Down on MKAnnotationView");
+}
 
 
 @end

@@ -75,13 +75,13 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 	//Annotations
 	CPArray annotations @accessors(readonly);
     
-    CPArray annotationViews;
-	
 	CGRect annotationVisibleRect @accessors(readonly);
 	
 	CPArray selectedAnnotations @accessors();
 	
 	CPArray _dequeueAnnotationViews;
+	
+	CPDictionary _annotationViews;
 	
 	//Overlays TODO:Implement
 	CPArray overlays @accessors(readonly);
@@ -98,7 +98,7 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 	  
 	  if(canvasProjectionOverlay)
 	  {
-		  point = canvasProjectionOverlay.getProjection().fromLatLngToContainerPixel(coordinate);
+		  point = canvasProjectionOverlay.getProjection().fromLatLngToContainerPixel(LatLngFromCLLocationCoordinate2D(coordinate));
 	  }
 	  
 	  return point;
@@ -188,14 +188,73 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 }
 
 
--(void)_refreshAnnotationsForRegion
+-(void)_refreshAnnotations
 {
-	
+	for (var i=0; i < [annotations count]; i++) {
+		var annotation = annotations[i];
+		[self _refreshAnnotation:annotation];
+	};
 }
 
 -(void)_refreshAnnotation:(MKAnnotation)aAnnotation
 {
+
+	var map_bounds = [self namespace].getBounds();
 	
+	if(map_bounds.contains(LatLngFromCLLocationCoordinate2D([aAnnotation coordinate])))
+	{
+		
+		var point = [self convertCoordinate:[aAnnotation coordinate] toPointToView:self];
+		
+		if(![_annotationViews containsKey:[aAnnotation UID]])
+		{
+			var annotationView = [self viewForAnnotation:aAnnotation];
+			[annotationView setFrame:CGRectMake(point.x,point.y - 10,10,10)];
+			[annotationView setAnnotation:aAnnotation];
+			[annotationView setDelegate:self];
+
+			[_annotationViews setValue:annotationView forKey:[aAnnotation UID]];
+			
+			[self addSubview:annotationView];
+		}
+		else
+		{
+			var annotationView = [_annotationViews valueForKey:[aAnnotation UID]];
+			
+			[annotationView setFrame:CGRectMake(point.x,point.y - 10,10,10)];
+		}
+	
+		
+	}
+	else
+	{
+		[self _removeAnnotationViewForAnnotation:aAnnotation];
+		
+	}
+}
+
+-(void)_removeAnnotationViewForAnnotation:(MKAnnotation)aAnnotation
+{
+	if([_annotationViews containsKey:[aAnnotation UID]])
+	{
+		var annotationView = [_annotationViews valueForKey:[aAnnotation UID]];
+		[annotationView removeFromSuperview];
+			
+		[_dequeueAnnotationViews addObject:annotationView];
+		[_annotationViews removeObjectForKey:[aAnnotation UID]];
+	}
+}
+
+
+//AnnotationViewDelegate
+-(void)annotationViewdidSelected:(MKAnnotationView)aAnnotationView
+{
+	var annnotationView = aAnnotationView;
+
+	if([delegate respondsToSelector:@selector(mapView:didSelectAnnotationView:)])
+	{
+		[delegate mapView:self didSelectAnnotationView:annnotationView];
+	}
 }
 
 
@@ -218,7 +277,21 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 
 -(MKMapRect)MKMapRect
 {
-	
+	return visibleMapRect;
+}
+
+
+-(void)_setMKMapRect
+{
+	var map_bounds = [self namespace].getBounds();
+
+	var x = map_bounds.getSouthWest().lat();
+  	var y = map_bounds.getSouthWest().lng();
+  	var width = map_bounds.getNorthEast().lat() - x;
+  	var height = map_bounds.getNorthEast().lng() - y;	
+  	
+  	visibleMapRect = MKMapRectMake(x,y,width,height);
+  		
 }
 
 -(void)setZoomEnabled:(BOOL)enabled
@@ -287,7 +360,7 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
         [self setScrollWheelZoomEnabled:YES];
         
         annotations = [CPArray array];
-        annotationViews = [CPArray array];
+        _annotationViews = [[CPDictionary alloc] init];
         _dequeueAnnotationViews = [CPArray array];
         
         markerDictionary = [[CPDictionary alloc] init];
@@ -324,44 +397,26 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
   m_map = new google.maps.Map(m_DOMMapElement, optiones);
   canvasProjectionOverlay = new CanvasProjectionOverlay();
   canvasProjectionOverlay.setMap(m_map);
-  
-   if([delegate respondsToSelector:@selector(loadedMap:)])
-  {
-   	[delegate loadedMap:self];
-  }
-  
+ 
   new google.maps.event.addListener([self namespace], 'click', function(event) { 
   	if([delegate respondsToSelector:@selector(mapView:didClickedAtLocation:)])
 	 {
 		 [delegate mapView:self didClickedAtLocation:CLLocationCoordinate2DFromLatLng(event.latLng)];
 	 }
 	 
-	
+	 
+  if([delegate respondsToSelector:@selector(loadedMap:)])
+  {
+   	[delegate loadedMap:self];
+  }
+    
   });
-  
   
   
   new google.maps.event.addListener([self namespace], 'center_changed', function(event){
 	  [self setValue:CLLocationCoordinate2DFromLatLng([self namespace].getCenter()) forKey:@"centerCoordinate"];
-  	/*
-  	  for (var i=0; i < [annotationViews count]; i++) {
-  	  	 var annotationView = annotationViews[i];
-	  	 var point = canvasProjectionOverlay.getProjection().fromLatLngToContainerPixel(LatLngFromCLLocationCoordinate2D(annotationView.annotation.coordinate));
-		
-		var animation = [[LPViewAnimation alloc] initWithViewAnimations:[
-        {
-            @"target": annotationView,
-            @"animations": [
-                [LPOriginAnimationKey, [annotationView frameOrigin], CGPointMake(point.x,point.y)]
-            ]
-        }
-    ]];
-
-  	  	 
-  	  	 [annotationView setFrame:CGRectMake(point.x,point.y,100,100)];
-  		
-  		//console.log(canvasProjectionOverlay.getProjection().fromLatLngToContainerPixel([self namespace].getCenter()));*/
-  });
+	  [self _refreshAnnotations];  	
+ });
   
 }
 
@@ -391,7 +446,7 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
     }
 }
 
-- (void)setRegion:(MKCoordinateRegion)aRegion animted:(BOOL)animated
+- (void)setRegion:(MKCoordinateRegion)aRegion animated:(BOOL)animated
 {
 
 }
@@ -405,12 +460,9 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
     if (m_centerCoordinate &&
         CLLocationCoordinate2DEqualToCLLocationCoordinate2D(m_centerCoordinate, aCoordinate))
         return;
-    
-
     	
     m_centerCoordinate = new CLLocationCoordinate2D(aCoordinate);
-   // [self _reverseSetBinding];
-    //L
+
 
     if ([self namespace])
        [self namespace].panTo(LatLngFromCLLocationCoordinate2D(m_centerCoordinate));
@@ -524,39 +576,10 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 	
 	for (var i =0; i < annotationsCount; i++) {
 		var annotation = aAnnotationArray[i];
-			
-		var marker = null;
-	
-		
-		var point = canvasProjectionOverlay.getProjection().fromLatLngToContainerPixel(LatLngFromCLLocationCoordinate2D(annotation.coordinate));
-		var view = [[MKAnnotationView alloc] initWithFrame:CGRectMake(point.x,point.y - 100,100,100)];
-		[view setAnnotation:annotation];
-		[view setBackgroundColor:[CPColor blackColor]];
-		[self addSubview:view];
-		
-		[annotationViews addObject:view];
-		
-	console.log(point);
-		if([markerDictionary valueForKey:[annotation UID]])
-		{
-			marker = [markerDictionary valueForKey:[annotation UID]];
-			marker.setMap([self namespace]);
-		}
-		else
-		{
-			
-			var marker = new google.maps.Marker({
-    			position: LatLngFromCLLocationCoordinate2D([annotation coordinate]),
-    			map: [self namespace]
-	  		});
-  			[markerDictionary setValue:marker forKey:[annotation UID]];
-
-			
-		}
-		
 		[annotations addObject:annotation];
 	};
-
+	
+	[self _refreshAnnotations];
 }
 
 - (void)removeAnnotation:(MKAnnotation)annotation
@@ -574,13 +597,8 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 		
 		if(annotation)
 		{
-			var marker = [markerDictionary valueForKey:[annotation UID]];
+			[self _removeAnnotationViewForAnnotation:aAnnotation];
 
-			if(marker)
-	  		{
-				marker.setMap(null);
-				[markerDictionary setValue:null forKey:[annotation UID]];	
-	  		}		
 			
 			[annotations removeObject:annotation];
 		}

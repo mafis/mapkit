@@ -33,6 +33,7 @@ function MKCoordinateSpan(/*CLLocationDegrees*/ aLatitudeDelta, /*CLLocationDegr
     return this;
 }
 
+
 MKCoordinateSpan.prototype.toString = function()
 {
     return "{" + this.latitudeDelta + ", " + this.longitudeDelta + "}";
@@ -148,3 +149,53 @@ function LatLngBoundsFromMKCoordinateRegion(/*MKCoordinateRegion*/ aRegion)
         new LatLng(latitude + latitudeDelta / 2, longitude + longitudeDelta / 2) // NE
         );
 }
+
+function MKMapPoint(/* double*/ x, /*double*/ y)
+{
+	this.x = x;
+    this.y = y;
+
+    return this;
+}
+
+function MKMapPointMake(/* double*/ x, /*double*/ y)
+{
+	return new MKMapPoint(x,y);
+}
+
+
+function MKMapSize(/* double*/ width, /*double*/ height)
+{
+	this.width = width;
+    this.height = height;
+
+    return this;
+}
+
+function MKMapSizeMake(/* double*/ width, /*double*/ height)
+{
+	return new MKMapSize(width,height);
+}
+
+function MKMapRect(/* MKMapPoint*/ origin, /*MKMapSize*/ size)
+{
+	this.origin = origin;
+    this.size = size;
+
+    return this;
+}
+
+function MKMapRectMake(/* double*/ x, /*double*/ y, /*double*/ width ,/*double*/ height)
+{
+	return new MKMapRect(MKMapPointMake(x,y),MKMapSizeMake(width,height));
+}
+
+MKMapRect.prototype.toString = function()
+{
+    return "{" + 
+            this.origin.x + ", " + 
+            this.origin.y + ", " + 
+            this.size.width + ", " + 
+            this.size.height + "}";
+}
+
