@@ -161,9 +161,9 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
   canvasProjectionOverlay = new CanvasProjectionOverlay();
   canvasProjectionOverlay.setMap(m_map);
   
-  if(delegate){
-  
-  	
+   if([delegate respondsToSelector:@selector(loadedMap:)])
+  {
+   	[delegate loadedMap:self];
   }
   
   new google.maps.event.addListener([self namespace], 'click', function(event) { 
@@ -172,10 +172,7 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 		 [delegate mapView:self didClickedAtLocation:CLLocationCoordinate2DFromLatLng(event.latLng)];
 	 }
 	 
-	  if([delegate respondsToSelector:@selector(loadedMap:)])
-	 {
-    	[delegate loadedMap:self];
-     }
+	
   });
   
   
@@ -195,13 +192,11 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
             ]
         }
     ]];
-*/
+
   	  	 
   	  	 [annotationView setFrame:CGRectMake(point.x,point.y,100,100)];
-  	  	 
-  	  };
   		
-  		//console.log(canvasProjectionOverlay.getProjection().fromLatLngToContainerPixel([self namespace].getCenter()));
+  		//console.log(canvasProjectionOverlay.getProjection().fromLatLngToContainerPixel([self namespace].getCenter()));*/
   });
   
 }
