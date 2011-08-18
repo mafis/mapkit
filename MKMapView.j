@@ -25,6 +25,14 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 
+function CanvasProjectionOverlay() {}
+CanvasProjectionOverlay.prototype = new google.maps.OverlayView();
+CanvasProjectionOverlay.prototype.constructor = CanvasProjectionOverlay;
+CanvasProjectionOverlay.prototype.onAdd = function(){};
+CanvasProjectionOverlay.prototype.draw = function(){};
+CanvasProjectionOverlay.prototype.onRemove = function(){};
+
+
 @import <AppKit/CPView.j>
 
 @import "MKGeometry.j"
@@ -50,8 +58,13 @@
     
     CPArray annotations @accessors(readonly);
     
+    CPArray annotationViews;
+    
     
     CPDictionary markerDictionary;
+
+	var canvasProjectionOverlay;
+
 
 }
 
@@ -111,6 +124,7 @@
         [self setScrollWheelZoomEnabled:YES];
         
         annotations = [CPArray array];
+        annotationViews = [CPArray array];
         
         markerDictionary = [[CPDictionary alloc] init];
 
@@ -144,12 +158,12 @@
     disableDefaultUI: true,
   }
   m_map = new google.maps.Map(m_DOMMapElement, optiones);
+  canvasProjectionOverlay = new CanvasProjectionOverlay();
+  canvasProjectionOverlay.setMap(m_map);
+  
   if(delegate){
   
-  	 if([delegate respondsToSelector:@selector(loadedMap:)])
-	 {
-    	[delegate loadedMap:self];
-     }
+  	
   }
   
   new google.maps.event.addListener([self namespace], 'click', function(event) { 
@@ -157,12 +171,37 @@
 	 {
 		 [delegate mapView:self didClickedAtLocation:CLLocationCoordinate2DFromLatLng(event.latLng)];
 	 }
+	 
+	  if([delegate respondsToSelector:@selector(loadedMap:)])
+	 {
+    	[delegate loadedMap:self];
+     }
   });
   
   
   
-  new google.maps.event.addListener([self namespace], 'mouseup', function(event){
+  new google.maps.event.addListener([self namespace], 'center_changed', function(event){
 	  [self setValue:CLLocationCoordinate2DFromLatLng([self namespace].getCenter()) forKey:@"centerCoordinate"];
+  	/*
+  	  for (var i=0; i < [annotationViews count]; i++) {
+  	  	 var annotationView = annotationViews[i];
+	  	 var point = canvasProjectionOverlay.getProjection().fromLatLngToContainerPixel(LatLngFromCLLocationCoordinate2D(annotationView.annotation.coordinate));
+		
+		var animation = [[LPViewAnimation alloc] initWithViewAnimations:[
+        {
+            @"target": annotationView,
+            @"animations": [
+                [LPOriginAnimationKey, [annotationView frameOrigin], CGPointMake(point.x,point.y)]
+            ]
+        }
+    ]];
+*/
+  	  	 
+  	  	 [annotationView setFrame:CGRectMake(point.x,point.y,100,100)];
+  	  	 
+  	  };
+  		
+  		//console.log(canvasProjectionOverlay.getProjection().fromLatLngToContainerPixel([self namespace].getCenter()));
   });
   
 }
@@ -316,9 +355,19 @@
 	
 	for (var i =0; i < annotationsCount; i++) {
 		var annotation = aAnnotationArray[i];
-		
+			
 		var marker = null;
+	
 		
+		var point = canvasProjectionOverlay.getProjection().fromLatLngToContainerPixel(LatLngFromCLLocationCoordinate2D(annotation.coordinate));
+		var view = [[MKAnnotationView alloc] initWithFrame:CGRectMake(point.x,point.y - 100,100,100)];
+		[view setAnnotation:annotation];
+		[view setBackgroundColor:[CPColor blackColor]];
+		[self addSubview:view];
+		
+		[annotationViews addObject:view];
+		
+	console.log(point);
 		if([markerDictionary valueForKey:[annotation UID]])
 		{
 			marker = [markerDictionary valueForKey:[annotation UID]];
