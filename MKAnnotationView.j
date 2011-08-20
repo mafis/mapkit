@@ -16,6 +16,8 @@
 	id delegate @accessors();
 	
 	//TODO : Dragstate
+	
+	CPImageView _imageView;
 }
 
 - (id)initWithAnnotation:(MKAnnotation)aAnnotation reuseIdentifer:(CPString)aIdentfier
@@ -23,6 +25,10 @@
 	if(self = [super init])
 	{
 		self.annotation = aAnnotation;
+		self.draggable = NO;
+		self.enabled = YES;
+		self.leftCalloutAccessoryView = nil;
+		self.rightCalloutAccessoryView = nil;
 	}
 	return self;
 }
@@ -30,6 +36,30 @@
 - (void)prepareForReuse
 {
 	
+}
+
+-(void)setImage:(CPImage)aImage
+{
+	if(!_imageView)
+	{
+		_imageView = [[CPImageView alloc] initWithFrame:CGRectMake(0,0,0,0)];
+		[self addSubview:_imageView];
+	}
+	
+	[aImage setDelegate:self];
+	image = aImage;
+	[_imageView setImage:image];
+
+}
+
+-(void)imageDidLoad:(CPImage)aImage
+{
+	var imageSize = CPSizeMake([aImage size].width, [aImage size].width);
+
+	[self setFrameSize:imageSize];
+	[_imageView setFrameSize:imageSize];
+
+
 }
 
 - (void)setSelected:(BOOL)selected animated:(BOOL)animated
@@ -46,12 +76,15 @@
 
 - (void)mouseDown:(CPEvent)anEvent	
 {
-	if([delegate respondsToSelector:@selector(annotationViewdidSelected:)])
+
+	//Only send Mouse Events, if annotationView is enabled
+	if(enabled && [delegate respondsToSelector:@selector(annotationViewdidSelected:)])
 	{
-		[delegate annotationViewdidSelected:self]
-	}
+		
 
 	CPLog.debug("Mouse Down on MKAnnotationView");
+		[delegate annotationViewdidSelected:self]
+	}
 }
 
 

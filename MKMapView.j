@@ -47,6 +47,7 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 
     BOOL                    m_scrollWheelZoomEnabled;
 
+
     // Tracking
     BOOL                    m_previousTrackingLocation;
 
@@ -55,13 +56,8 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 	Object                  m_map;
 
     @outlet id delegate @accessors;
-    
-  
-    
-    
-    CPDictionary markerDictionary;
-
-	var canvasProjectionOverlay;
+   
+	var canvasProjectionOverlay;	
 	
 	//New
 	
@@ -209,7 +205,7 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 		if(![_annotationViews containsKey:[aAnnotation UID]])
 		{
 			var annotationView = [self viewForAnnotation:aAnnotation];
-			[annotationView setFrame:CGRectMake(point.x,point.y - 10,10,10)];
+			[annotationView setFrameOrigin:CGPointMake(point.x,point.y - 10)];
 			[annotationView setAnnotation:aAnnotation];
 			[annotationView setDelegate:self];
 
@@ -221,7 +217,7 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 		{
 			var annotationView = [_annotationViews valueForKey:[aAnnotation UID]];
 			
-			[annotationView setFrame:CGRectMake(point.x,point.y - 10,10,10)];
+			[annotationView setFrameOrigin:CGPointMake(point.x,point.y - 10)];
 		}
 	
 		
@@ -237,9 +233,14 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 {
 	if([_annotationViews containsKey:[aAnnotation UID]])
 	{
+		CPLog.debug("REmove Annotation from MapView");
+
 		var annotationView = [_annotationViews valueForKey:[aAnnotation UID]];
 		[annotationView removeFromSuperview];
-			
+		
+		//Set AnnotaionView Annotation to Nil for reuse
+		[annotationView setAnnotation:nil];
+		
 		[_dequeueAnnotationViews addObject:annotationView];
 		[_annotationViews removeObjectForKey:[aAnnotation UID]];
 	}
@@ -362,9 +363,8 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
         annotations = [CPArray array];
         _annotationViews = [[CPDictionary alloc] init];
         _dequeueAnnotationViews = [CPArray array];
-        
-        markerDictionary = [[CPDictionary alloc] init];
-
+      
+       
         [self _buildDOM];
     }
 
@@ -417,6 +417,7 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 	  [self setValue:CLLocationCoordinate2DFromLatLng([self namespace].getCenter()) forKey:@"centerCoordinate"];
 	  [self _refreshAnnotations];  	
  });
+ 
   
 }
 
