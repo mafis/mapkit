@@ -79,6 +79,8 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 	
 	CPDictionary _annotationViews;
 	
+	CPPopover _annotationPopover;
+	
 	//Overlays TODO:Implement
 	CPArray overlays @accessors(readonly);
 	
@@ -86,6 +88,10 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 	BOOL showsUserLocation @accessors();
 	BOOL userLocationVisible @accessors(getter=isUserLocationVisible);
 	var userLocation @accessors(readonly);
+	
+	CPView selectedAnnotationView;
+	
+	BOOL busy;
 }
 //Converting Map Coordinates
 - (CGPoint)convertCoordinate:(CLLocationCoordinate2D)coordinate toPointToView:(CPView)view
@@ -184,22 +190,42 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 }
 
 
+var map_bounds;
+
 -(void)_refreshAnnotations
 {
-	for (var i=0; i < [annotations count]; i++) {
-		var annotation = annotations[i];
-		[self _refreshAnnotation:annotation];
+	map_bounds = [self namespace].getBounds();
+/*	 var i = 0, limit = [annotations count], busy = false; 
+	 var processor = setInterval(function() 
+	 { 
+	    if(!busy)
+	    { 
+	      busy = true; 
+	      var annotation = annotations[i];
+		  [self _refreshAnnotation:annotation];
+			
+	      if(++i == limit)
+	      { 
+	        clearInterval(processor); 
+	      } 
+	      busy = false;
+	    } 
+	 }, 1);*/
+	var count = [annotations count];
+	
+	for (var i=0; i < count; i++) {
+		[self _refreshAnnotation:annotations[i]];
+
 	};
+	
+	map_bounds = null;	
 }
+
 
 -(void)_refreshAnnotation:(MKAnnotation)aAnnotation
 {
-
-	var map_bounds = [self namespace].getBounds();
-	
 	if(map_bounds.contains(LatLngFromCLLocationCoordinate2D([aAnnotation coordinate])))
 	{
-		
 		var point = [self convertCoordinate:[aAnnotation coordinate] toPointToView:self];
 		
 		if(![_annotationViews containsKey:[aAnnotation UID]])
@@ -208,41 +234,40 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 			[annotationView setFrameOrigin:CGPointMake(point.x,point.y - 10)];
 			[annotationView setAnnotation:aAnnotation];
 			[annotationView setDelegate:self];
-
 			[_annotationViews setValue:annotationView forKey:[aAnnotation UID]];
-			
 			[self addSubview:annotationView];
 		}
 		else
 		{
 			var annotationView = [_annotationViews valueForKey:[aAnnotation UID]];
-			
 			[annotationView setFrameOrigin:CGPointMake(point.x,point.y - 10)];
 		}
-	
 		
 	}
 	else
 	{
 		[self _removeAnnotationViewForAnnotation:aAnnotation];
-		
 	}
 }
 
 -(void)_removeAnnotationViewForAnnotation:(MKAnnotation)aAnnotation
 {
 	if([_annotationViews containsKey:[aAnnotation UID]])
-	{
-		CPLog.debug("REmove Annotation from MapView");
-
+	{	
 		var annotationView = [_annotationViews valueForKey:[aAnnotation UID]];
 		[annotationView removeFromSuperview];
 		
 		//Set AnnotaionView Annotation to Nil for reuse
 		[annotationView setAnnotation:nil];
+		[annotationView setDelegate:nil];
 		
 		[_dequeueAnnotationViews addObject:annotationView];
 		[_annotationViews removeObjectForKey:[aAnnotation UID]];
+		
+		if(annotationView === selectedAnnotationView)
+		{
+			[_annotationPopover close];
+		}
 	}
 }
 
@@ -250,11 +275,39 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
 //AnnotationViewDelegate
 -(void)annotationViewdidSelected:(MKAnnotationView)aAnnotationView
 {
-	var annnotationView = aAnnotationView;
+	CPLog.debug("annotationViewdidSelected:");
+
+	selectedAnnotationView = aAnnotationView;
+
+	if(_annotationPopover)
+	{
+		[_annotationPopover close];
+	}
+		var g = CPMinYEdge;
+
+   		var a = CPPopoverAppearanceHUD;
+   	 
+   	  	_annotationPopover = [[CPPopover alloc] init];
+        var viewC = [[CPViewController alloc] init];
+        var  view = [[CPView alloc] initWithFrame:CPRectMake(0.0, 0.0, 200, 50)];
+		
+		var label = [[CPTextField alloc] initWithFrame:CPRectMake(0.0,0.0, 200,25)];
+		[label setStringValue:[[aAnnotationView annotation] title]]; 
+		[label setTextColor:[CPColor whiteColor]];
+				
+		[view addSubview:label];
+		
+   		[viewC setView:view];
+    	[_annotationPopover setContentViewController:viewC];
+  	  	[_annotationPopover setAppearance:a];
+  		[_annotationPopover setDelegate:self];
+   		[_annotationPopover showRelativeToRect:nil ofView:selectedAnnotationView preferredEdge:g];
+
+   
 
 	if([delegate respondsToSelector:@selector(mapView:didSelectAnnotationView:)])
 	{
-		[delegate mapView:self didSelectAnnotationView:annnotationView];
+		[delegate mapView:self didSelectAnnotationView:selectedAnnotationView];
 	}
 }
 
@@ -399,25 +452,37 @@ CanvasProjectionOverlay.prototype.onRemove = function(){};
   canvasProjectionOverlay.setMap(m_map);
  
   new google.maps.event.addListener([self namespace], 'click', function(event) { 
-  	if([delegate respondsToSelector:@selector(mapView:didClickedAtLocation:)])
+	if(_annotationPopover)
+	{
+		[_annotationPopover close];
+	}
+	
+	 if([delegate respondsToSelector:@selector(mapView:didClickedAtLocation:)])
 	 {
 		 [delegate mapView:self didClickedAtLocation:CLLocationCoordinate2DFromLatLng(event.latLng)];
 	 }
-	 
-	 
-  if([delegate respondsToSelector:@selector(loadedMap:)])
-  {
-   	[delegate loadedMap:self];
-  }
-    
   });
   
   
   new google.maps.event.addListener([self namespace], 'center_changed', function(event){
-	  [self setValue:CLLocationCoordinate2DFromLatLng([self namespace].getCenter()) forKey:@"centerCoordinate"];
-	  [self _refreshAnnotations];  	
- });
- 
+	if(!busy)
+	{
+		busy = true;
+	  	[self setValue:CLLocationCoordinate2DFromLatLng([self namespace].getCenter()) forKey:@"centerCoordinate"];
+		[self _refreshAnnotations];  	
+		busy = false;
+	}
+	
+	});
+
+  
+ 	//Throws the loadedMap Event after the Map is complete loaded
+	google.maps.event.addListenerOnce([self namespace], 'idle', function(){
+		if([delegate respondsToSelector:@selector(loadedMap:)])
+		{
+		   	[delegate loadedMap:self];
+		}
+	});
   
 }
 

@@ -29,6 +29,7 @@
 		self.enabled = YES;
 		self.leftCalloutAccessoryView = nil;
 		self.rightCalloutAccessoryView = nil;
+		
 	}
 	return self;
 }
@@ -42,7 +43,9 @@
 {
 	if(!_imageView)
 	{
+		[self setBackgroundColor:[CPColor clearColor]];
 		_imageView = [[CPImageView alloc] initWithFrame:CGRectMake(0,0,0,0)];
+		[_imageView setBackgroundColor:[CPColor clearColor]];
 		[self addSubview:_imageView];
 	}
 	
@@ -55,7 +58,7 @@
 -(void)imageDidLoad:(CPImage)aImage
 {
 	var imageSize = CPSizeMake([aImage size].width, [aImage size].width);
-
+	
 	[self setFrameSize:imageSize];
 	[_imageView setFrameSize:imageSize];
 
